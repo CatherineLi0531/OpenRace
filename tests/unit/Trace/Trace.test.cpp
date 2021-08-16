@@ -42,7 +42,7 @@ define void @foo() {
   llvm::SMDiagnostic Err;
   auto module = llvm::parseAssemblyString(modString, Err, Ctx);
 
-  race::ProgramTrace program(module.get(), "foo");
+  race::ProgramTrace program(module.get(), false, "foo");
   auto const &threads = program.getThreads();
   REQUIRE(threads.size() == 1);
 
@@ -88,7 +88,7 @@ declare i32 @pthread_join(i64, i8**)
     Err.print("error", llvm::errs());
   }
 
-  race::ProgramTrace program(module.get(), "foo");
+  race::ProgramTrace program(module.get(), true, "foo");
   auto const &threads = program.getThreads();
   REQUIRE(threads.size() == 2);
 
@@ -164,7 +164,7 @@ declare i32 @pthread_join(i64, i8**)
     Err.print("error", llvm::errs());
   }
 
-  race::ProgramTrace program(module.get(), "foo");
+  race::ProgramTrace program(module.get(), true, "foo");
   auto const &threads = program.getThreads();
   REQUIRE(threads.size() == 3);
 
@@ -225,7 +225,7 @@ declare i32 @pthread_mutex_unlock(%union.pthread_mutex_t*) #1
     Err.print("error", llvm::errs());
   }
 
-  race::ProgramTrace program(module.get());
+  race::ProgramTrace program(module.get(), false);
   auto const &threads = program.getThreads();
   REQUIRE(threads.size() == 1);
 

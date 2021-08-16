@@ -73,6 +73,10 @@ struct TraceBuildState {
   // pState.threads.size() will be updated after finishing the construction, we need such a counter
   ThreadID currentTID = 0;
 
+  // whether we reach a meaningful IR in the main thread that relates to/starts multi-threads,
+  // e.g., lock, pthread_create, openmp fork, etc.
+  bool startRecord = false;
+
   // When set, skip traversing until this instruction is reached
   const llvm::Instruction *skipUntil = nullptr;
 
@@ -89,6 +93,7 @@ class ProgramTrace {
 
  public:
   pta::PTA pta;
+  bool skipUntilFork;
 
   [[nodiscard]] inline const std::vector<const ThreadTrace *> &getThreads() const { return threads; }
 
@@ -97,7 +102,7 @@ class ProgramTrace {
   // Get the module after preprocessing has been run
   [[nodiscard]] const Module &getModule() const { return *module; }
 
-  explicit ProgramTrace(llvm::Module *module, llvm::StringRef entryName = "main");
+  explicit ProgramTrace(llvm::Module *module, bool skipUntilFork = true, llvm::StringRef entryName = "main");
   ~ProgramTrace() = default;
   ProgramTrace(const ProgramTrace &) = delete;
   ProgramTrace(ProgramTrace &&) = delete;  // Need to update threads because

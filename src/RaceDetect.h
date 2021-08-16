@@ -24,6 +24,9 @@ struct DetectRaceConfig {
 
   // Compute and print the coverage (= analyzed source code/all source code)
   bool doCoverage = false;
+
+  // Skip all the instructions in the main thread before we reach a fork/spawn/other interesting IR
+  bool skilUntilFork = false;
 };
 
 Report detectRaces(llvm::Module *module, DetectRaceConfig config = DetectRaceConfig());

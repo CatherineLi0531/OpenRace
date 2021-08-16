@@ -9,11 +9,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "Analysis/LockSet.h"
+
 #include <llvm/AsmParser/Parser.h>
 
 #include <catch2/catch.hpp>
-
-#include "Analysis/LockSet.h"
 
 // TODO: really need way to construct and eval trace for testing, not reading IR
 TEST_CASE("Simple lockset test", "[unit][lockset]") {
@@ -61,7 +61,7 @@ declare i32 @pthread_mutex_unlock(%union.pthread_mutex_t*) #1
     Err.print("error", llvm::errs());
   }
 
-  race::ProgramTrace program(module.get());
+  race::ProgramTrace program(module.get(), false);
 
   auto const &threads = program.getThreads();
   REQUIRE(threads.size() == 1);

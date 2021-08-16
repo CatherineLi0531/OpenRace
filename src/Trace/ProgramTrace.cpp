@@ -16,7 +16,8 @@ limitations under the License.
 
 using namespace race;
 
-ProgramTrace::ProgramTrace(llvm::Module *module, llvm::StringRef entryName) : module(module) {
+ProgramTrace::ProgramTrace(llvm::Module *module, bool skipUntilFork, llvm::StringRef entryName)
+    : module(module), skipUntilFork(skipUntilFork) {
   // Run preprocessing on module
   preprocess(*module);
 
@@ -24,6 +25,7 @@ ProgramTrace::ProgramTrace(llvm::Module *module, llvm::StringRef entryName) : mo
   pta.analyze(module, entryName);
 
   TraceBuildState state;
+  state.startRecord = !skipUntilFork;
 
   // build all threads starting from this main func
   auto const mainEntry = pta::GT::getEntryNode(pta.getCallGraph());

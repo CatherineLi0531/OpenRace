@@ -100,7 +100,7 @@ std::shared_ptr<const FunctionSummary> generateFunctionSummary(const llvm::Funct
         }
 
         auto calledFunc = CallIR::resolveTargetFunction(callInst);
-        if (calledFunc == nullptr || calledFunc->isIntrinsic() || calledFunc->isDebugInfoForProfiling()) {
+        if (calledFunc == nullptr) {
           continue;
         }
 

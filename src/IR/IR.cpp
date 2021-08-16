@@ -20,6 +20,45 @@ namespace {
 llvm::StringRef getValNameHelper(const llvm::Value *val, llvm::StringRef defaultLabel = "UnknownVal") {
   return (val && val->hasName()) ? val->getName() : defaultLabel;
 }
+
+llvm::Function *_resolveTargetFunction(const llvm::CallBase *callInst) {
+  auto calledFunc = callInst->getCalledFunction();
+  if (calledFunc) {
+    if (!calledFunc->hasName()) {
+      llvm::errs() << "could not find called func without name: " << *callInst << "\n";
+      return nullptr;
+    }
+    return calledFunc;
+  }
+
+  // callInst might call a function with alias/cast, the same as pta::CallSite::resolveTargetFunction but no const
+  // e.g., @_ZN6DomainD1Ev = dso_local unnamed_addr alias void (%class.Domain*), void (%class.Domain*)* @_ZN6DomainD2Ev
+  // refer to https://llvm.org/docs/LangRef.html#aliases
+  llvm::Value *calledValue = callInst->getCalledOperand();
+  if (auto bitcast = llvm::dyn_cast<llvm::BitCastOperator>(calledValue)) {
+    if (auto function = llvm::dyn_cast<llvm::Function>(bitcast->getOperand(0))) {
+      return function;
+    }
+    llvm::errs() << "resolveTargetFunction matched bitcast but symbol was not Function: " << *callInst << "\n";
+  }
+
+  if (auto globalAlias = llvm::dyn_cast<llvm::GlobalAlias>(calledValue)) {
+    auto globalSymbol = globalAlias->getIndirectSymbol()->stripPointerCasts();
+    if (auto function = llvm::dyn_cast<llvm::Function>(globalSymbol)) {
+      return function;
+    }
+    llvm::errs() << "resolveTargetFunction matched globalAlias but symbol was not Function: " << *callInst << "\n";
+  }
+
+  if (llvm::isa<llvm::UndefValue>(calledValue)) {
+    llvm::errs() << "resolveTargetFunction encounter undefvalue: " << *callInst << "\n";
+    return nullptr;
+  }
+
+  llvm::errs() << "Unable to resolveTargetFunction from calledValue: " << *callInst << "\n";
+  return nullptr;
+}
+
 }  // namespace
 
 llvm::raw_ostream &race::operator<<(llvm::raw_ostream &os, const IR &stmt) {
@@ -113,39 +152,10 @@ llvm::StringRef IR::toString() const {
 }
 
 llvm::Function *CallIR::resolveTargetFunction(const llvm::CallBase *callInst) {
-  auto calledFunc = callInst->getCalledFunction();
-  if (calledFunc) {
-    if (!calledFunc->hasName()) {
-      llvm::errs() << "could not find called func without name: " << *callInst << "\n";
-      return nullptr;
-    }
-    return calledFunc;
-  }
-
-  // callInst might call a function with alias/cast, the same as pta::CallSite::resolveTargetFunction but no const
-  // e.g., @_ZN6DomainD1Ev = dso_local unnamed_addr alias void (%class.Domain*), void (%class.Domain*)* @_ZN6DomainD2Ev
-  // refer to https://llvm.org/docs/LangRef.html#aliases
-  llvm::Value *calledValue = callInst->getCalledOperand();
-  if (auto bitcast = llvm::dyn_cast<llvm::BitCastOperator>(calledValue)) {
-    if (auto function = llvm::dyn_cast<llvm::Function>(bitcast->getOperand(0))) {
-      return function;
-    }
-    llvm::errs() << "resolveTargetFunction matched bitcast but symbol was not Function: " << *callInst << "\n";
-  }
-
-  if (auto globalAlias = llvm::dyn_cast<llvm::GlobalAlias>(calledValue)) {
-    auto globalSymbol = globalAlias->getIndirectSymbol()->stripPointerCasts();
-    if (auto function = llvm::dyn_cast<llvm::Function>(globalSymbol)) {
-      return function;
-    }
-    llvm::errs() << "resolveTargetFunction matched globalAlias but symbol was not Function: " << *callInst << "\n";
-  }
-
-  if (llvm::isa<llvm::UndefValue>(calledValue)) {
-    llvm::errs() << "resolveTargetFunction encounter undefvalue: " << *callInst << "\n";
+  auto calledFunc = _resolveTargetFunction(callInst);
+  if (calledFunc == nullptr || calledFunc->isIntrinsic() || calledFunc->isDebugInfoForProfiling()) {
+    // filter out uninteresting functions
     return nullptr;
   }
-
-  llvm::errs() << "Unable to resolveTargetFunction from calledValue: " << *callInst << "\n";
-  return nullptr;
+  return calledFunc;
 }

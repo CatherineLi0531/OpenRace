@@ -46,7 +46,7 @@ declare i32 @pthread_join(i64, i8**)
     Err.print("error", llvm::errs());
   }
 
-  race::ProgramTrace program(module.get(), "foo");
+  race::ProgramTrace program(module.get(), true, "foo");
 
   race::HappensBeforeGraph happensbefore(program);
 

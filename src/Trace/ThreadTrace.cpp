@@ -93,6 +93,39 @@ bool handleOMPEvents(const CallIR *callIR, TraceBuildState &state, bool isMaster
 
 // return true if the current instruction should be skipped
 bool shouldSkipIR(const std::shared_ptr<const IR> &ir, TraceBuildState &state) {
+  if (!state.startRecord && state.currentTID == 0) {
+    // return true if this instruction is in the main thread and we haven't seen a fork/spawn/other interesting IR:
+    // because HB relation is fixed and only the main thread exists, guarantee to have no race.
+    auto inst = ir.get()->getInst();
+    if (auto callInst = llvm::dyn_cast<llvm::CallBase>(inst)) {
+      if (callInst->isIndirectCall()) return true;
+
+      auto calledFunc = CallIR::resolveTargetFunction(callInst);
+      if (calledFunc == nullptr) {
+        return true;
+      }
+
+      auto const typ = ir->type;
+      if (typ == IR::Type::PthreadMutexLock || typ == IR::Type::PthreadSpinLock ||
+          typ == IR::Type::OpenMPGetThreadNum) {
+        // we only record this IR but not the afterwards IRs
+        // these are external functions and we do not want to exclude them from the trace
+        return false;
+      } else if (typ == IR::Type::PthreadCreate || typ == IR::Type::OpenMPFork || typ == IR::Type::OpenMPForkTeams) {
+        // the record of all IRs starts here
+        state.startRecord = true;
+        return false;
+      } else if (calledFunc->isDeclaration()) {
+        // exclude uninteresting external functions
+        return true;
+      }
+
+      // for all other called functions, we need to enter the function body to see if any interesting IR exists
+      return false;
+    }
+    return true;
+  }
+
   if (!state.skipUntil) return false;
 
   // Skip until we reach the target instruction
@@ -224,7 +257,7 @@ void traverseCallNode(const pta::CallGraphNodeTy *node, ThreadTrace &thread, Cal
 
       auto directContext = pta::CT::contextEvolve(context, ir->getInst());
       auto callee = CallIR::resolveTargetFunction(call->getInst());
-      if (callee == nullptr || callee->isIntrinsic() || callee->isDebugInfoForProfiling()) {
+      if (callee == nullptr) {
         continue;
       }
 
@@ -277,12 +310,12 @@ ThreadTrace::ThreadTrace(ProgramTrace &program, const pta::CallGraphNodeTy *entr
 
 ThreadTrace::ThreadTrace(const ForkEvent *spawningEvent, const pta::CallGraphNodeTy *entry, TraceBuildState &state)
     : id(++state.currentTID), program(spawningEvent->getThread().program), spawnSite(spawningEvent) {
-  buildEventTrace(entry, program.pta, state);
-
   auto const entries = spawningEvent->getThreadEntry();
   auto it = std::find(entries.begin(), entries.end(), entry);
   // entry mut be one of the entries from the spawning event
   assert(it != entries.end());
+
+  buildEventTrace(entry, program.pta, state);
 }
 
 std::vector<const ForkEvent *> ThreadTrace::getForkEvents() const {

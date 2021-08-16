@@ -24,7 +24,7 @@ limitations under the License.
 using namespace race;
 
 Report race::detectRaces(llvm::Module *module, DetectRaceConfig config) {
-  race::ProgramTrace program(module);
+  race::ProgramTrace program(module, config.skilUntilFork);
 
   if (config.dumpPreprocessedIR.has_value()) {
     std::error_code err;

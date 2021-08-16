@@ -9,11 +9,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "Analysis/SharedMemory.h"
+
 #include <llvm/AsmParser/Parser.h>
 
 #include <catch2/catch.hpp>
 
-#include "Analysis/SharedMemory.h"
 #include "Trace/ProgramTrace.h"
 
 TEST_CASE("Construct SharedMemory from real Program", "[unit][sharedmemory]") {
@@ -47,6 +48,6 @@ declare i32 @pthread_join(i64, i8**)
     Err.print("error", llvm::errs());
   }
 
-  race::ProgramTrace program(module.get(), "foo");
+  race::ProgramTrace program(module.get(), true, "foo");
   race::SharedMemory sharedmem(program);
 }
