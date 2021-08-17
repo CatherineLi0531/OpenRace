@@ -152,7 +152,8 @@ struct HBLockState {
 
   // clear/release all allocated memory here
   void clear() {
-    forkJoinEvents.resize(0);  // or use .clear() ?
+    // or use .clear() ?
+    forkJoinEvents.resize(0);
     forkJoinEvents.shrink_to_fit();
     lockEvents.resize(0);
     lockEvents.shrink_to_fit();
@@ -198,6 +199,9 @@ struct TraversalState {
 
   // remove the record from traversedStates when the build of thread trace is finished
   void removeStateFor(const ThreadID tid) {
+    if (curState == nullptr || curState->myTID != tid) {
+      findOrCreateCurState(tid);
+    }
     curState->clear();
     curState = nullptr;
     traversedStates.erase(tid);
