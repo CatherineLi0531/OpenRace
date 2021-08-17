@@ -12,9 +12,9 @@ int main() {
 
     if (tid == 1) {
       write_val(&counter, tid);
-      write_val(&counter, tid);
+      write_val(&counter, tid);  // this should be skipped
     }
-    write_val(&counter, tid);
+    write_val(&counter, tid);  // this should not be skipped
   }
 
   printf("%d\n", counter);

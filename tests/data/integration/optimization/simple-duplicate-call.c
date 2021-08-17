@@ -10,7 +10,7 @@ int main() {
 #pragma omp parallel
   {
     write_val(&counter, tid);
-    write_val(&counter, tid);
+    write_val(&counter, tid);  // this should be skipped
   }
 
   printf("%d\n", counter);
