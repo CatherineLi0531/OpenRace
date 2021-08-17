@@ -14,17 +14,18 @@ add_executable(tester
     unit/Trace/CallStack.test.cpp
     unit/Trace/Trace.test.cpp
     unit/Trace/OpenMPTrace.test.cpp
+    unit/Opt/Opt.test.cpp
     
     integration/pthreadrace.test.cpp
     integration/dataracebench.test.cpp
     integration/openmp.test.cpp
+    integration/optimization.test.cpp
 
     regression/EmptyThread.test.cpp
     regression/OpenMPRegression.test.cpp
 
     # Helper logic
-    helpers/ReportChecking.cpp
-)
+    helpers/ReportChecking.cpp)
 target_link_libraries(tester pta racedetect-lib ${llvm_libs} CONAN_PKG::catch2)
 target_include_directories(tester PRIVATE ${LLVM_INCLUDE_DIRS})
 target_include_directories(tester PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

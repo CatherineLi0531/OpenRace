@@ -161,6 +161,7 @@ void traverseCallNode(const pta::CallGraphNodeTy *node, ThreadTrace &thread, Cal
 
       std::shared_ptr<const ForkIR> fork(ir, forkIR);
       events.push_back(std::make_unique<const ForkEventImpl>(fork, einfo, events.size()));
+      state.traversal.updateEvent(thread.id, events.size() - 1, Event::Type::Fork);
 
       if (forkIR->type == IR::Type::OpenMPForkTeams) {
         state.openmp.teamsDepth++;
@@ -170,7 +171,7 @@ void traverseCallNode(const pta::CallGraphNodeTy *node, ThreadTrace &thread, Cal
       auto event = events.back().get();
       auto forkEvent = llvm::cast<ForkEvent>(event);
 
-      // maintain the current traversed tasks in state.openmp.unjoinedTasks
+      // maintain the current traversedStates tasks in state.openmp.unjoinedTasks
       if (forkIR->type == IR::Type::OpenMPTaskFork) {
         std::shared_ptr<const OpenMPTaskFork> task(fork, llvm::cast<OpenMPTaskFork>(fork.get()));
         state.openmp.unjoinedTasks.emplace_back(forkEvent, task);
@@ -199,12 +200,15 @@ void traverseCallNode(const pta::CallGraphNodeTy *node, ThreadTrace &thread, Cal
 
       std::shared_ptr<const JoinIR> join(ir, joinIR);
       events.push_back(std::make_unique<const JoinEventImpl>(join, einfo, events.size()));
+      state.traversal.updateEvent(thread.id, events.size() - 1, Event::Type::Join);
     } else if (auto lockIR = llvm::dyn_cast<LockIR>(ir.get())) {
       std::shared_ptr<const LockIR> lock(ir, lockIR);
       events.push_back(std::make_unique<const LockEventImpl>(lock, einfo, events.size()));
+      state.traversal.updateEvent(thread.id, events.size() - 1, Event::Type::Lock);
     } else if (auto unlockIR = llvm::dyn_cast<UnlockIR>(ir.get())) {
       std::shared_ptr<const UnlockIR> lock(ir, unlockIR);
       events.push_back(std::make_unique<const UnlockEventImpl>(lock, einfo, events.size()));
+      state.traversal.updateEvent(thread.id, events.size() - 1, Event::Type::Unlock);
     } else if (auto barrierIR = llvm::dyn_cast<BarrierIR>(ir.get())) {
       // handle task joins at barriers
       if (barrierIR->type == IR::Type::OpenMPBarrier) {
@@ -213,6 +217,7 @@ void traverseCallNode(const pta::CallGraphNodeTy *node, ThreadTrace &thread, Cal
 
       std::shared_ptr<const BarrierIR> barrier(ir, barrierIR);
       events.push_back(std::make_unique<const BarrierEventImpl>(barrier, einfo, events.size()));
+      state.traversal.updateEvent(thread.id, events.size() - 1, Event::Type::Barrier);
     } else if (auto callIR = llvm::dyn_cast<CallIR>(ir.get())) {
       std::shared_ptr<const CallIR> call(ir, callIR);
 
@@ -252,6 +257,11 @@ void traverseCallNode(const pta::CallGraphNodeTy *node, ThreadTrace &thread, Cal
         continue;
       }
 
+      if (state.traversal.existStateForFunc(thread.id, func)) {
+        // prevent duplicate traversals
+        continue;
+      }
+
       events.push_back(std::make_unique<const EnterCallEventImpl>(call, einfo, events.size()));
       traverseCallNode(directNode, thread, callstack, pta, events, threads, state);
       events.push_back(std::make_unique<const LeaveCallEventImpl>(call, einfo, events.size()));
@@ -268,6 +278,7 @@ void traverseCallNode(const pta::CallGraphNodeTy *node, ThreadTrace &thread, Cal
 void ThreadTrace::buildEventTrace(const pta::CallGraphNodeTy *entry, const pta::PTA &pta, TraceBuildState &state) {
   CallStack callstack;
   traverseCallNode(entry, *this, callstack, pta, events, childThreads, state);
+  state.traversal.removeStateFor(this->id);
 }
 
 ThreadTrace::ThreadTrace(ProgramTrace &program, const pta::CallGraphNodeTy *entry, TraceBuildState &state)
