@@ -119,7 +119,8 @@ struct HBLockState {
         break;
       }
       case Event::Type::Lock:
-      case Event::Type::Unlock: {
+      case Event::Type::Unlock:
+      case Event::Type::ExternCall: {  // the guards treats like locks
         lockEvents.push_back(eid);
         curLock = new LockState(lockEvents);
         break;

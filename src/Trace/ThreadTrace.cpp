@@ -254,6 +254,10 @@ void traverseCallNode(const pta::CallGraphNodeTy *node, ThreadTrace &thread, Cal
 
       if (directNode->getTargetFun()->isExtFunction()) {
         events.push_back(std::make_unique<ExternCallEventImpl>(call, einfo, events.size()));
+        if (callIR->type == IR::Type::OpenMPGetThreadNumGuardStart ||
+            callIR->type == IR::Type::OpenMPGetThreadNumGuardEnd) {
+          state.traversal.updateEvent(thread.id, events.size() - 1, Event::Type::ExternCall);
+        }
         continue;
       }
 
