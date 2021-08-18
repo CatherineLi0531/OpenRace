@@ -93,7 +93,9 @@ bool handleOMPEvents(const CallIR *callIR, TraceBuildState &state, bool isMaster
 
 // return true if the current instruction should be skipped
 bool shouldSkipIR(const std::shared_ptr<const IR> &ir, TraceBuildState &state) {
-  if (!state.startRecord && state.currentTID == 0) {
+  if (!state.startRecord) {
+    assert(state.currentTID == 0 && "Only enter this code when building for the main thread.");
+
     // return true if this instruction is in the main thread and we haven't seen a fork/spawn/other interesting IR:
     // because HB relation is fixed and only the main thread exists, guarantee to have no race.
     auto inst = ir.get()->getInst();
@@ -106,12 +108,11 @@ bool shouldSkipIR(const std::shared_ptr<const IR> &ir, TraceBuildState &state) {
       }
 
       auto const typ = ir->type;
-      if (typ == IR::Type::PthreadMutexLock || typ == IR::Type::PthreadSpinLock ||
-          typ == IR::Type::OpenMPGetThreadNum) {
-        // we only record this IR but not the afterwards IRs
-        // these are external functions and we do not want to exclude them from the trace
+      if (IR::isLockGuardTypeBeforeReachingParallel(typ)) {
+        // we only record this IR but not the afterwards IRs: these are external functions
+        // that may happen before any forks and we do not want to exclude them from the trace
         return false;
-      } else if (typ == IR::Type::PthreadCreate || typ == IR::Type::OpenMPFork || typ == IR::Type::OpenMPForkTeams) {
+      } else if (IR::isForkType(typ)) {
         // the record of all IRs starts here
         state.startRecord = true;
         return false;

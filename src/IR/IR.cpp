@@ -159,3 +159,14 @@ llvm::Function *CallIR::resolveTargetFunction(const llvm::CallBase *callInst) {
   }
   return calledFunc;
 }
+
+// return true if typ is a IR Type that fork a new thread
+bool IR::isForkType(const IR::Type typ) {
+  return typ == IR::Type::PthreadCreate || typ == IR::Type::OpenMPFork || typ == IR::Type::OpenMPForkTeams;
+}
+
+// return true if typ is a IR Type of lock or guard, e.g., omp_get_thread_num, single
+// AND it may happen before reaching any forks
+bool IR::isLockGuardTypeBeforeReachingParallel(const IR::Type typ) {
+  return typ == IR::Type::PthreadMutexLock || typ == IR::Type::PthreadSpinLock || typ == IR::Type::OpenMPGetThreadNum;
+}

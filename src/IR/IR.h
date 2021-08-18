@@ -80,6 +80,9 @@ class IR {
   [[nodiscard]] virtual llvm::StringRef toString() const;
   virtual void print(llvm::raw_ostream &os) const = 0;
 
+  static bool isForkType(const IR::Type typ);
+  static bool isLockGuardTypeBeforeReachingParallel(const IR::Type typ);
+
   virtual ~IR() = default;
 
  protected:
