@@ -190,6 +190,9 @@ auto const _inSameSingleBlock = inSame<IR::Type::OpenMPSingleStart, IR::Type::Op
 auto const _inSameGuardedTID =
     haveSameTID<IR::Type::OpenMPGetThreadNumGuardStart, IR::Type::OpenMPGetThreadNumGuardEnd>;
 
+// TODO: ???
+auto const _inSameParallelSections = inSame<IR::Type::OpenMPSectionStart, IR::Type::OpenMPSectionEnd>;
+
 }  // namespace
 
 const std::vector<OpenMPAnalysis::LoopRegion> &OpenMPAnalysis::getOmpForLoops(const ThreadTrace &thread) {

@@ -193,8 +193,8 @@ struct SectionGuardState {
 
   // create the fake functions, once
   void createFakeGuardFn(llvm::LLVMContext &context, llvm::Module &module) {
-    guardStartFn = generateFakeFn(OpenMPModel::OpenMPSectionGuardStart, context, module);
-    guardEndFn = generateFakeFn(OpenMPModel::OpenMPSectionGuardEnd, context, module);
+    guardStartFn = generateFakeFn(OpenMPModel::OpenMPSectionStart, context, module);
+    guardEndFn = generateFakeFn(OpenMPModel::OpenMPSectionEnd, context, module);
   }
 };
 
