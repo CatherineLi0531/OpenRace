@@ -114,6 +114,9 @@ inline bool isGetThreadNum(const llvm::StringRef& funcName) { return funcName.eq
 static const std::string OpenMPThreadGuardStart{"omp_get_thread_num_guard_start"};
 static const std::string OpenMPThreadGuardEnd{"omp_get_thread_num_guard_end"};
 
+static const std::string OpenMPSectionGuardStart{"omp_section_guard_start"};
+static const std::string OpenMPSectionGuardEnd{"omp_section_guard_end"};
+
 inline bool isGetThreadNumGuardStart(const llvm::StringRef& funcName) {
   return funcName.equals(OpenMPThreadGuardStart);
 }
