@@ -19,8 +19,8 @@ limitations under the License.
 
 namespace race {
 
-struct TraceBuildState;
 class ProgramTrace;
+struct ProgramBuildState;
 
 using ThreadID = size_t;
 
@@ -41,12 +41,11 @@ class ThreadTrace {
 
   // Constructs the main thread.
   // All others should be built from forkEvent constructor
-  ThreadTrace(ProgramTrace &program, const pta::CallGraphNodeTy *entry, TraceBuildState &state);
+  ThreadTrace(ProgramTrace &program, const pta::CallGraphNodeTy *entry);
+
   // Construct thread from forkEvent.
-  // entry specifies the entry point of the spawned thread
-  //  and should be one of the entries from the spawningEvent entry list
-  // threads should be mutable reference to ProgramTrace's list of threads
-  ThreadTrace(const ForkEvent *spawningEvent, const pta::CallGraphNodeTy *entry, TraceBuildState &state);
+  ThreadTrace(const ForkEvent *spawningEvent, ProgramBuildState &state);
+
   ~ThreadTrace() = default;
   ThreadTrace(const ThreadTrace &) = delete;
   ThreadTrace(ThreadTrace &&other) = delete;
@@ -56,8 +55,6 @@ class ThreadTrace {
  private:
   std::vector<std::unique_ptr<const Event>> events;
   std::vector<std::unique_ptr<const ThreadTrace>> childThreads;
-
-  void buildEventTrace(const pta::CallGraphNodeTy *entry, const pta::PTA &pta, TraceBuildState &state);
 };
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &os, const ThreadTrace &thread);
