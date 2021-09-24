@@ -66,7 +66,7 @@ void race::buildTrace(const pta::CallGraphNodeTy *node, ThreadBuildState &state)
   // Update  einfo
   state.einfo = std::make_shared<EventInfo>(state.thread, node->getContext());
 
-  auto const &summary = *state.programState.builder.getFunctionSummary(func);
+  auto const &summary = state.programState.builder.getFunctionSummary(func);
   for (auto const &ir : summary) {
     if (shouldSkipIR(ir, state)) {
       continue;

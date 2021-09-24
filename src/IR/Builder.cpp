@@ -230,17 +230,30 @@ std::shared_ptr<const FunctionSummary> generateFunctionSummary(const llvm::Funct
 }
 }  // namespace
 
-std::shared_ptr<const FunctionSummary> FunctionSummaryBuilder::getFunctionSummary(const llvm::Function *func) {
+void FunctionSummaryBuilder::markUsed(const llvm::Function *func) {
+  lru.remove(func);
+  lru.push_front(func);
+}
+
+const FunctionSummary &FunctionSummaryBuilder::getFunctionSummary(const llvm::Function *func) {
   assert(func != nullptr);
 
   // Check the cache
   auto it = cache.find(func);
   if (it != cache.end()) {
-    return it->second;
+    markUsed(func);
+    return *it->second;
+  }
+
+  if (cache.size() > 50) {
+    auto const leastUsed = lru.back();
+    lru.pop_back();
+    cache.erase(leastUsed);
   }
 
   // Else compute the summary and add to cache
   auto const summary = generateFunctionSummary(*func);
   cache.insert(std::make_pair(func, summary));
-  return summary;
+  lru.push_front(func);
+  return *summary;
 }

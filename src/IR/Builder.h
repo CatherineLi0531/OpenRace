@@ -11,9 +11,9 @@ limitations under the License.
 
 #pragma once
 
+#include <list>
 #include <memory>
-#include <queue>
-#include <set>
+#include <unordered_map>
 #include <vector>
 
 #include "IR/IR.h"
@@ -25,9 +25,12 @@ using FunctionSummary = std::vector<std::shared_ptr<const IR>>;
 
 // cache FunctionSummary here
 class FunctionSummaryBuilder {
-  std::map<const llvm::Function *, std::shared_ptr<const FunctionSummary>> cache;
+  std::unordered_map<const llvm::Function *, std::shared_ptr<const FunctionSummary>> cache;
+
+  std::list<const llvm::Function *> lru;
+  void markUsed(const llvm::Function *func);
 
  public:
-  std::shared_ptr<const FunctionSummary> getFunctionSummary(const llvm::Function *func);
+  const FunctionSummary &getFunctionSummary(const llvm::Function *func);
 };
 }  // namespace race
