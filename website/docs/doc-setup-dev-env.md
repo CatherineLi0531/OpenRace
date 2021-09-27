@@ -43,6 +43,9 @@ pip install conan
 pip3 install conan
 ```
 
+If installing through pip, make sure you have added the install directory to your path. 
+By default, python installs conan to `$HOME/.local/bin/`. 
+
 Alternatively, you can also obtain the package binary and install Conan from there:
 ``` shell
 # Download
