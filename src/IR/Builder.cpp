@@ -83,12 +83,12 @@ std::shared_ptr<const FunctionSummary> generateFunctionSummary(const llvm::Funct
 
       // TODO: try switch on inst->getOpCode instead
       if (auto loadInst = llvm::dyn_cast<llvm::LoadInst>(inst)) {
-        if (loadInst->isAtomic() || loadInst->isVolatile() || hasThreadLocalOperand(loadInst)) {
+        if (loadInst->isAtomic() || hasThreadLocalOperand(loadInst)) {
           continue;
         }
         summary.push_back(std::make_shared<race::Load>(loadInst));
       } else if (auto storeInst = llvm::dyn_cast<llvm::StoreInst>(inst)) {
-        if (storeInst->isAtomic() || storeInst->isVolatile() || hasThreadLocalOperand(storeInst)) {
+        if (storeInst->isAtomic() || hasThreadLocalOperand(storeInst)) {
           continue;
         }
         summary.push_back(std::make_shared<race::Store>(storeInst));

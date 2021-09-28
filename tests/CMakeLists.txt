@@ -19,8 +19,8 @@ add_executable(tester
     integration/dataracebench.test.cpp
     integration/openmp.test.cpp
 
-    regression/EmptyThread.test.cpp
     regression/OpenMPRegression.test.cpp
+    regression/regressions.test.cpp
 
     # Helper logic
     helpers/ReportChecking.cpp
