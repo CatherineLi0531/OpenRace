@@ -395,6 +395,32 @@ class OpenMPBarrier : public BarrierIR {
   [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
 };
 
+// ==================================================================
+// ================= FreeIR Implementations =========================
+// ==================================================================
+
+class CFree : public FreeIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CFree(const llvm::CallBase *call) : FreeIR(Type::CFree), inst(call) {}
+
+  [[nodiscard]] virtual const llvm::Value *getFreedValue() const override { return inst->getOperand(0); }
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+class CppDelete : public FreeIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CppDelete(const llvm::CallBase *call) : FreeIR(Type::CppDelete), inst(call) {}
+
+  [[nodiscard]] virtual const llvm::Value *getFreedValue() const override { return inst->getOperand(0); }
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
 // =================================================================
 // ================= Other Implementations =========================
 // =================================================================

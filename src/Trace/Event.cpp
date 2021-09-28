@@ -41,6 +41,9 @@ llvm::raw_ostream &race::operator<<(llvm::raw_ostream &os, const Event::Type &ty
     case Event::Type::Barrier:
       os << "Barrier";
       break;
+    case Event::Type::Free:
+      os << "Free";
+      break;
     case Event::Type::Call:
       os << "Call";
       break;

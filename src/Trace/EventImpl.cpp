@@ -35,3 +35,5 @@ const pta::CallGraphNodeTy *ForkEventImpl::getThreadEntry() const {
   }
   return *nodes.begin();
 }
+
+const std::multiset<const pta::ObjTy *> &FreeEventImpl::getFreedMemory() const { return accessedMemory; }

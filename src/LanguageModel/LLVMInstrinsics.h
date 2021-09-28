@@ -29,4 +29,6 @@ inline bool isNoEffect(const llvm::StringRef &funcName) {
          isMemcpy(funcName);
 }
 
+inline bool isCFree(const llvm::StringRef &funcName) { return funcName.equals("free"); }
+
 }  // namespace LLVMModel

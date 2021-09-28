@@ -24,7 +24,7 @@ using EventID = size_t;
 
 class Event {
  public:
-  enum class Type { Read, Write, Fork, Join, Lock, Unlock, Barrier, Call, CallEnd, ExternCall };
+  enum class Type { Read, Write, Fork, Join, Lock, Unlock, Barrier, Free, Call, CallEnd, ExternCall };
 
   const Type type;
 
@@ -143,6 +143,18 @@ class BarrierEvent : public Event {
 
  public:
   [[nodiscard]] const race::BarrierIR *getIRInst() const override = 0;
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  [[nodiscard]] static inline bool classof(const Event *e) { return e->type == Type::Barrier; }
+};
+
+class FreeEvent : public Event {
+ protected:
+  FreeEvent() : Event(Type::Free) {}
+
+ public:
+  [[nodiscard]] const race::FreeIR *getIRInst() const override = 0;
+  [[nodiscard]] virtual const std::multiset<const pta::ObjTy *> &getFreedMemory() const = 0;
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   [[nodiscard]] static inline bool classof(const Event *e) { return e->type == Type::Barrier; }

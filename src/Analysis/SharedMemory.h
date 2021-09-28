@@ -31,9 +31,11 @@ struct SharedMemory {
 
   std::map<ObjID, std::map<ThreadID, std::vector<const ReadEvent *>>> objReads;
   std::map<ObjID, std::map<ThreadID, std::vector<const WriteEvent *>>> objWrites;
+  std::map<ObjID, std::map<ThreadID, std::vector<const FreeEvent *>>> objFrees;
 
   [[nodiscard]] size_t numThreadsWrite(ObjID id) const;
   [[nodiscard]] size_t numThreadsRead(ObjID id) const;
+  [[nodiscard]] size_t numThreadsFree(ObjID id) const;
 
  public:
   explicit SharedMemory(const ProgramTrace &);
@@ -43,5 +45,6 @@ struct SharedMemory {
   // TODO: wrap this in option?? Make a copy?? Iterator??
   [[nodiscard]] std::map<ThreadID, std::vector<const ReadEvent *>> getThreadedReads(const pta::ObjTy *obj) const;
   [[nodiscard]] std::map<ThreadID, std::vector<const WriteEvent *>> getThreadedWrites(const pta::ObjTy *obj) const;
+  [[nodiscard]] std::map<ThreadID, std::vector<const FreeEvent *>> getThreadedFrees(const pta::ObjTy *obj) const;
 };
 }  // namespace race

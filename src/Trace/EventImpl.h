@@ -186,6 +186,27 @@ class BarrierEventImpl : public BarrierEvent {
   [[nodiscard]] inline const race::BarrierIR *getIRInst() const override { return barrier.get(); }
 };
 
+class FreeEventImpl : public FreeEvent {
+  std::shared_ptr<EventInfo> info;
+  std::multiset<const pta::ObjTy *> accessedMemory;
+
+ public:
+  const std::shared_ptr<const FreeIR> freeIR;
+  const EventID id;
+
+  FreeEventImpl(std::shared_ptr<const FreeIR> freeIR, std::shared_ptr<EventInfo> info, EventID id)
+      : info(std::move(info)), freeIR(std::move(freeIR)), id(id) {
+    this->info->thread->program.pta.getPointsTo(this->info->context, this->freeIR->getFreedValue(), accessedMemory);
+  }
+
+  [[nodiscard]] inline EventID getID() const override { return id; }
+  [[nodiscard]] inline const pta::ctx *getContext() const override { return info->context; }
+  [[nodiscard]] inline const ThreadTrace &getThread() const override { return *info->thread; }
+  [[nodiscard]] inline const race::FreeIR *getIRInst() const override { return freeIR.get(); }
+
+  [[nodiscard]] virtual const std::multiset<const pta::ObjTy *> &getFreedMemory() const override;
+};
+
 class EnterCallEventImpl : public EnterCallEvent {
   std::shared_ptr<EventInfo> info;
 

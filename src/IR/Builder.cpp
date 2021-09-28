@@ -108,6 +108,8 @@ std::shared_ptr<const FunctionSummary> generateFunctionSummary(const llvm::Funct
         auto funcName = calledFunc->getName();
         if (LLVMModel::isNoEffect(funcName)) {
           /* Do nothing */
+        } else if (LLVMModel::isCFree(funcName)) {
+          summary.push_back(std::make_shared<CFree>(callInst));
         } else if (PthreadModel::isPthreadCreate(funcName)) {
           summary.push_back(std::make_shared<PthreadCreate>(callInst));
         } else if (PthreadModel::isPthreadJoin(funcName)) {

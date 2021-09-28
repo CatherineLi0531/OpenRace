@@ -38,61 +38,31 @@ SharedMemory::SharedMemory(const ProgramTrace &program) {
       switch (event->type) {
         case Event::Type::Read: {
           auto readEvent = llvm::cast<ReadEvent>(event.get());
-          auto const ptsTo = readEvent->getAccessedMemory();
-          if (DEBUG_PTA) {
-            if (ptsTo.empty()) {
-              llvm::outs() << "Read: ID " << readEvent->getID();
-              readEvent->getIRInst()->getInst()->print(llvm::outs());
-              llvm::outs() << ", empty pts, "
-                           << "\n";
-              break;
-            } else {
-              llvm::outs() << "Read: ID " << readEvent->getID();
-              readEvent->getIRInst()->getInst()->print(llvm::outs());
-              llvm::outs() << ", pts: ";
-            }
-          }
+          auto const &ptsTo = readEvent->getAccessedMemory();
           // TODO: filter?
           for (auto obj : ptsTo) {
             auto &reads = objReads[getObjId(obj)][tid];
             reads.push_back(readEvent);
-            if (DEBUG_PTA) {
-              llvm::outs() << obj->getValue() << " " << obj->getObjectID() << " " << getObjId(obj) << ", ";
-            }
-          }
-          if (DEBUG_PTA) {
-            llvm::outs() << "\n";
           }
           break;
         }
         case Event::Type::Write: {
           auto writeEvent = llvm::cast<WriteEvent>(event.get());
-          auto const ptsTo = writeEvent->getAccessedMemory();
-          if (DEBUG_PTA) {
-            if (ptsTo.empty()) {
-              llvm::outs() << "Write: ID " << writeEvent->getID();
-              writeEvent->getIRInst()->getInst()->print(llvm::outs());
-              llvm::outs() << ", empty pts, "
-                           << "\n";
-              break;
-            } else {
-              llvm::outs() << "Write: ID " << writeEvent->getID();
-              writeEvent->getIRInst()->getInst()->print(llvm::outs());
-              llvm::outs() << ", pts: ";
-            }
-          }
+          auto const &ptsTo = writeEvent->getAccessedMemory();
           // TODO: filter?
           for (auto obj : ptsTo) {
             auto &writes = objWrites[getObjId(obj)][tid];
             writes.push_back(writeEvent);
-            if (DEBUG_PTA) {
-              llvm::outs() << obj->getValue() << " " << obj->getObjectID() << " " << getObjId(obj) << ", ";
-            }
-          }
-          if (DEBUG_PTA) {
-            llvm::outs() << "\n";
           }
           break;
+        }
+        case Event::Type::Free: {
+          auto const freeEvent = llvm::cast<FreeEvent>(event.get());
+          auto const &ptsTo = freeEvent->getFreedMemory();
+          for (auto const obj : ptsTo) {
+            auto &frees = objFrees[getObjId(obj)][tid];
+            frees.push_back(freeEvent);
+          }
         }
         default:
           // Do Nothing
@@ -105,6 +75,7 @@ std::vector<const pta::ObjTy *> SharedMemory::getSharedObjects() const {
   std::vector<const pta::ObjTy *> sharedObjects;
   for (auto const &[obj, objID] : objIDs) {
     auto const nWriters = numThreadsWrite(objID);
+    auto const nFrees = numThreadsFree(objID);
     auto const nReaders = numThreadsRead(objID);
 
     // Common case: If > 1 writer or 1 writer and 2 reader, guaranteed shared across threads
@@ -129,6 +100,11 @@ size_t SharedMemory::numThreadsRead(SharedMemory::ObjID id) const {
   if (it == objReads.end()) return 0;
   return it->second.size();
 }
+size_t SharedMemory::numThreadsFree(ObjID id) const {
+  auto it = objFrees.find(id);
+  if (it == objFrees.end()) return 0;
+  return it->second.size();
+}
 std::map<ThreadID, std::vector<const ReadEvent *>> SharedMemory::getThreadedReads(const pta::ObjTy *obj) const {
   auto id = objIDs.find(obj);
   if (id == objIDs.end()) return {};
@@ -146,6 +122,17 @@ std::map<ThreadID, std::vector<const WriteEvent *>> SharedMemory::getThreadedWri
 
   // cppcheck-suppress stlIfFind
   if (auto it = objWrites.find(id->second); it != objWrites.end()) {
+    return it->second;
+  }
+
+  return {};
+}
+std::map<ThreadID, std::vector<const FreeEvent *>> SharedMemory::getThreadedFrees(const pta::ObjTy *obj) const {
+  auto id = objIDs.find(obj);
+  if (id == objIDs.end()) return {};
+
+  // cppcheck-suppress stlIfFind
+  if (auto it = objFrees.find(id->second); it != objFrees.end()) {
     return it->second;
   }
 

@@ -142,6 +142,9 @@ void race::buildTrace(const pta::CallGraphNodeTy *node, ThreadBuildState &state)
     } else if (auto barrierIR = llvm::dyn_cast<BarrierIR>(ir.get())) {
       std::shared_ptr<const BarrierIR> barrier(ir, barrierIR);
       state.events.push_back(std::make_unique<const BarrierEventImpl>(barrier, state.einfo, state.events.size()));
+    } else if (auto freeIR = llvm::dyn_cast<FreeIR>(ir.get())) {
+      std::shared_ptr<const FreeIR> freeP(ir, freeIR);
+      state.events.push_back(std::make_unique<const FreeEventImpl>(freeP, state.einfo, state.events.size()));
     } else if (auto callIR = llvm::dyn_cast<CallIR>(ir.get())) {
       std::shared_ptr<const CallIR> call(ir, callIR);
 

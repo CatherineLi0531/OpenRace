@@ -58,6 +58,10 @@ class IR {
     Barrier,
     OpenMPBarrier,
     END_Barrier,
+    Free,
+    CFree,
+    CppDelete,
+    END_Free,
     Call,
     OpenMPForInit,
     OpenMPForFini,
@@ -206,6 +210,19 @@ class BarrierIR : public IR {
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static bool classof(const IR *e) { return e->type >= Type::Barrier && e->type < Type::END_Barrier; }
+};
+
+class FreeIR : public IR {
+ protected:
+  using IR::IR;
+
+ public:
+  [[nodiscard]] virtual const llvm::Value *getFreedValue() const = 0;
+
+  void print(llvm::raw_ostream &os) const override;
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static bool classof(const IR *e) { return e->type >= Type::Free && e->type < Type::END_Free; }
 };
 
 // CallIR is the only class in IR.h that can be concrete.

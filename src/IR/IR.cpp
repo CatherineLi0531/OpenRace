@@ -104,6 +104,11 @@ void UnlockIR::print(llvm::raw_ostream &os) const {
 
 void BarrierIR::print(llvm::raw_ostream &os) const { os << "IR " << type << "\n"; }
 
+void FreeIR::print(llvm::raw_ostream &os) const {
+  auto freedName = getValNameHelper(getFreedValue());
+  os << "IR " << type << " - " << freedName << "\n";
+}
+
 llvm::StringRef IR::toString() const {
   std::string s;
   llvm::raw_string_ostream os(s);
