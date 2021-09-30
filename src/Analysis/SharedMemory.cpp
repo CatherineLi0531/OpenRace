@@ -71,20 +71,57 @@ SharedMemory::SharedMemory(const ProgramTrace &program) {
     }
   }
 }
+
+bool SharedMemory::isShared(ObjID id) const {
+  auto const nWriters = numThreadsWrite(id);
+  auto const nFrees = numThreadsFree(id);
+  auto const nReaders = numThreadsRead(id);
+
+  // Only a few cases where when an obj is shared
+  // 1a. multiple threads writing
+  // 1b. multiple threads freeing
+  // 2a. one thread writing, multiple reading
+  // 2b. one thread freeing, multiple reading
+  // 3a. one write, one read (from different threads)
+  // 3b. one free, one read (from different threads)
+  // 3c. one free, one write (from different threads)
+
+  // 1. Multiple threads writing/freeing is potential race
+  if (nWriters > 1 || nFrees > 1) {
+    return true;
+  }
+
+  // 2. Atleast 1 write/free and multiple reads means potential race
+  if ((nWriters == 1 || nFrees == 1) && nReaders > 1) {
+    return true;
+  }
+
+  auto const writingThread = (nWriters == 1) ? std::optional{objWrites.at(id).begin()->first} : std::nullopt;
+  auto const readingThread = (nReaders == 1) ? std::optional{objReads.at(id).begin()->first} : std::nullopt;
+  auto const freeingThread = (nFrees == 1) ? std::optional{objFrees.at(id).begin()->first} : std::nullopt;
+
+  // 3a. A write and a read from different threads is potential race
+  if (writingThread && readingThread && writingThread.value() != readingThread.value()) {
+    return true;
+  }
+
+  // 3b. A free and a read from different threads is a potential race
+  if (freeingThread && readingThread && freeingThread.value() != readingThread.value()) {
+    return true;
+  }
+
+  // 3c. A free and a write from different threads is a potential race
+  if (freeingThread && writingThread && freeingThread.value() != writingThread.value()) {
+    return true;
+  }
+
+  return false;
+}
+
 std::vector<const pta::ObjTy *> SharedMemory::getSharedObjects() const {
   std::vector<const pta::ObjTy *> sharedObjects;
   for (auto const &[obj, objID] : objIDs) {
-    auto const nWriters = numThreadsWrite(objID);
-    auto const nFrees = numThreadsFree(objID);
-    auto const nReaders = numThreadsRead(objID);
-
-    // Common case: If > 1 writer or 1 writer and 2 reader, guaranteed shared across threads
-    if (nWriters > 1 || (nWriters == 1 && nReaders > 1)) {
-      sharedObjects.push_back(obj);
-    }
-    // When 1 writer and 1 reader, obj is shared if they are not the same thread
-    else if (nWriters == 1 && nReaders == 1 &&
-             objWrites.at(objID).begin()->first != objReads.at(objID).begin()->first) {
+    if (isShared(objID)) {
       sharedObjects.push_back(obj);
     }
   }

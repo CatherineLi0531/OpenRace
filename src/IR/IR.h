@@ -29,6 +29,10 @@ class IR {
     Store,
     APIWrite,
     END_Write,
+    Free,
+    CFree,
+    CppDelete,
+    END_Free,
     Fork,
     PthreadCreate,
     OpenMPFork,
@@ -58,10 +62,6 @@ class IR {
     Barrier,
     OpenMPBarrier,
     END_Barrier,
-    Free,
-    CFree,
-    CppDelete,
-    END_Free,
     Call,
     OpenMPForInit,
     OpenMPForFini,
@@ -112,7 +112,7 @@ class MemAccessIR : public IR {
 
  protected:
   explicit MemAccessIR(Type t) : IR(t) {
-    assert(t >= Type::Read && t <= Type::END_Write && "MemAccess constructed with non read/write type!");
+    assert(t >= Type::Read && t <= Type::END_Free && "MemAccess constructed with non read/write type!");
   }
 };
 
@@ -136,6 +136,20 @@ class WriteIR : public MemAccessIR {
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static inline bool classof(const IR *e) { return e->type >= Type::Write && e->type < Type::END_Write; }
+};
+
+class FreeIR : public MemAccessIR {
+ protected:
+  using MemAccessIR::MemAccessIR;
+
+ public:
+  [[nodiscard]] virtual const llvm::Value *getFreedValue() const = 0;
+  [[nodiscard]] const llvm::Value *getAccessedValue() const override { return getFreedValue(); }
+
+  void print(llvm::raw_ostream &os) const override;
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static bool classof(const IR *e) { return e->type >= Type::Free && e->type < Type::END_Free; }
 };
 
 class ForkIR : public IR {
@@ -210,19 +224,6 @@ class BarrierIR : public IR {
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static bool classof(const IR *e) { return e->type >= Type::Barrier && e->type < Type::END_Barrier; }
-};
-
-class FreeIR : public IR {
- protected:
-  using IR::IR;
-
- public:
-  [[nodiscard]] virtual const llvm::Value *getFreedValue() const = 0;
-
-  void print(llvm::raw_ostream &os) const override;
-
-  // Used for llvm style RTTI (isa, dyn_cast, etc.)
-  static bool classof(const IR *e) { return e->type >= Type::Free && e->type < Type::END_Free; }
 };
 
 // CallIR is the only class in IR.h that can be concrete.

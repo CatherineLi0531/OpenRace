@@ -37,6 +37,10 @@ struct SharedMemory {
   [[nodiscard]] size_t numThreadsRead(ObjID id) const;
   [[nodiscard]] size_t numThreadsFree(ObjID id) const;
 
+  // Return true if this obj is accessed across multiple threads
+  // return false if the only cross-thread access are reads
+  bool isShared(ObjID id) const;
+
  public:
   explicit SharedMemory(const ProgramTrace &);
 

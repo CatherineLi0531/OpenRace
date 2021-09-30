@@ -59,7 +59,9 @@ class MemAccessEvent : public Event {
   [[nodiscard]] virtual const std::multiset<const pta::ObjTy *> &getAccessedMemory() const = 0;
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
-  [[nodiscard]] static inline bool classof(const Event *e) { return e->type == Type::Read || e->type == Type::Write; }
+  [[nodiscard]] static inline bool classof(const Event *e) {
+    return e->type == Type::Read || e->type == Type::Write || e->type == Type::Free;
+  }
 };
 
 class ReadEvent : public MemAccessEvent {
@@ -82,6 +84,19 @@ class WriteEvent : public MemAccessEvent {
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   [[nodiscard]] static inline bool classof(const Event *e) { return e->type == Type::Write; }
+};
+
+class FreeEvent : public MemAccessEvent {
+ protected:
+  FreeEvent() : MemAccessEvent(Type::Free) {}
+
+ public:
+  [[nodiscard]] const race::FreeIR *getIRInst() const override = 0;
+  [[nodiscard]] virtual const std::multiset<const pta::ObjTy *> &getFreedMemory() const = 0;
+  [[nodiscard]] const std::multiset<const pta::ObjTy *> &getAccessedMemory() const override { return getFreedMemory(); }
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  [[nodiscard]] static inline bool classof(const Event *e) { return e->type == Type::Free; }
 };
 
 class ForkEvent : public Event {
@@ -143,18 +158,6 @@ class BarrierEvent : public Event {
 
  public:
   [[nodiscard]] const race::BarrierIR *getIRInst() const override = 0;
-
-  // Used for llvm style RTTI (isa, dyn_cast, etc.)
-  [[nodiscard]] static inline bool classof(const Event *e) { return e->type == Type::Barrier; }
-};
-
-class FreeEvent : public Event {
- protected:
-  FreeEvent() : Event(Type::Free) {}
-
- public:
-  [[nodiscard]] const race::FreeIR *getIRInst() const override = 0;
-  [[nodiscard]] virtual const std::multiset<const pta::ObjTy *> &getFreedMemory() const = 0;
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   [[nodiscard]] static inline bool classof(const Event *e) { return e->type == Type::Barrier; }

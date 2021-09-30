@@ -110,7 +110,7 @@ class Report {
  public:
   std::set<Race> races;
 
-  Report(const std::vector<std::pair<const WriteEvent *, const MemAccessEvent *>> &rawRaces);
+  Report(const std::vector<std::pair<const MemAccessEvent *, const MemAccessEvent *>> &rawRaces);
 
   inline bool empty() { return races.empty(); };
   inline std::size_t size() { return races.size(); };
@@ -119,10 +119,10 @@ class Report {
 };
 
 class Reporter {
-  std::vector<std::pair<const WriteEvent *, const MemAccessEvent *>> racepairs;
+  std::vector<std::pair<const MemAccessEvent *, const MemAccessEvent *>> racepairs;
 
  public:
-  void collect(const WriteEvent *e1, const MemAccessEvent *e2);
+  void collect(const MemAccessEvent *e1, const MemAccessEvent *e2);
 
   [[nodiscard]] Report getReport() const;
 };

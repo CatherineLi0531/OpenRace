@@ -27,7 +27,7 @@ class SimpleAlias {
   SimpleAlias() { PB.registerFunctionAnalyses(FAM); }
 
   // return true if the memory accessed by each instruction cannot alias
-  bool mustNotAlias(const WriteEvent *write, const MemAccessEvent *other);
+  bool mustNotAlias(const MemAccessEvent *write, const MemAccessEvent *other);
 };
 
 }  // namespace race

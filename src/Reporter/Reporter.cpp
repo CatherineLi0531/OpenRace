@@ -159,7 +159,7 @@ llvm::raw_ostream &race::operator<<(llvm::raw_ostream &os, const RaceAccess &acc
 
 void race::to_json(json &j, const Race &race) { j = json{{"access1", race.first}, {"access2", race.second}}; }
 
-Report::Report(const std::vector<std::pair<const WriteEvent *, const MemAccessEvent *>> &racepairs) {
+Report::Report(const std::vector<std::pair<const MemAccessEvent *, const MemAccessEvent *>> &racepairs) {
   size_t skipped = 0;
   for (auto const &racepair : racepairs) {
     Race race(racepair.first, racepair.second);
@@ -182,7 +182,7 @@ void Report::dumpReport(const std::string &path) const {
   output.close();
 }
 
-void Reporter::collect(const WriteEvent *e1, const MemAccessEvent *e2) {
+void Reporter::collect(const MemAccessEvent *e1, const MemAccessEvent *e2) {
   racepairs.emplace_back(std::make_pair(e1, e2));
 }
 

@@ -58,7 +58,7 @@ Report race::detectRaces(llvm::Module *module, DetectRaceConfig config) {
   // FAM.registerPass([&] { return PB.buildDefaultAAPipeline(); });
 
   // Adds to report if race is detected between write and other
-  auto checkRace = [&](const race::WriteEvent *write, const race::MemAccessEvent *other) {
+  auto checkRace = [&](const race::MemAccessEvent *write, const race::MemAccessEvent *other) {
     if (DEBUG_PTA) {
       llvm::outs() << "Checking Race: " << write->getID() << "(TID " << write->getThread().id << ") "
                    << "(line" << write->getIRInst()->getInst()->getDebugLoc().getLine()  // DRB149 crash on this line
@@ -117,8 +117,9 @@ Report race::detectRaces(llvm::Module *module, DetectRaceConfig config) {
   };
 
   for (auto const sharedObj : sharedmem.getSharedObjects()) {
-    auto threadedWrites = sharedmem.getThreadedWrites(sharedObj);
-    auto threadedReads = sharedmem.getThreadedReads(sharedObj);
+    auto const threadedWrites = sharedmem.getThreadedWrites(sharedObj);
+    auto const threadedReads = sharedmem.getThreadedReads(sharedObj);
+    auto const threadedFrees = sharedmem.getThreadedFrees(sharedObj);
 
     for (auto it = threadedWrites.begin(), end = threadedWrites.end(); it != end; ++it) {
       auto const wtid = it->first;
@@ -139,6 +140,41 @@ Report race::detectRaces(llvm::Module *module, DetectRaceConfig config) {
         for (auto write : writes) {
           for (auto otherWrite : otherWrites) {
             checkRace(write, otherWrite);
+          }
+        }
+      }
+
+      // Check write/free
+      for (auto const &[ftid, frees] : threadedFrees) {
+        if (wtid == ftid) continue;
+        for (auto const write : writes) {
+          for (auto const free : frees) {
+            checkRace(write, free);
+          }
+        }
+      }
+    }
+
+    for (auto it = threadedFrees.begin(), end = threadedFrees.end(); it != end; ++it) {
+      auto const ftid = it->first;
+      auto const frees = it->second;
+
+      // check free/read
+      for (auto const &[rtid, reads] : threadedReads) {
+        if (ftid == rtid) continue;
+        for (auto free : frees) {
+          for (auto read : reads) {
+            checkRace(free, read);
+          }
+        }
+      }
+
+      // check free/free
+      for (auto fit = std::next(it, 1); fit != end; ++fit) {
+        auto otherFrees = fit->second;
+        for (auto free : frees) {
+          for (auto otherFree : otherFrees) {
+            checkRace(free, otherFree);
           }
         }
       }
