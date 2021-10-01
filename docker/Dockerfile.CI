@@ -4,6 +4,7 @@ FROM ubuntu:20.04 AS build
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y \
     cmake git make python3 build-essential ninja-build \
     # Clean up
