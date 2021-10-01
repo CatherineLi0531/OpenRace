@@ -50,7 +50,7 @@ llvm::raw_ostream &race::operator<<(llvm::raw_ostream &os, const SourceLoc &loc)
 }
 
 CallSignature::CallSignature(const llvm::CallBase *callBase) : call(std::nullopt), loc(getSourceLoc(callBase)) {
-  if (callBase->getCalledFunction()->hasName()) {
+  if (callBase->getCalledFunction() && callBase->getCalledFunction()->hasName()) {
     call = callBase->getCalledFunction()->getName();
   }
 }
