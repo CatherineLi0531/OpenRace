@@ -13,16 +13,19 @@ limitations under the License.
 
 #include "PreProcessing/PreProcessing.h"
 #include "Trace/Event.h"
-
 using namespace race;
 
 ProgramTrace::ProgramTrace(llvm::Module *module, llvm::StringRef entryName) : module(module) {
+  llvm::outs() << timestamp() << " Start Preproc\n";
   // Run preprocessing on module
   preprocess(*module);
+
+  llvm::outs() << timestamp() << " Start PTA\n";
 
   // Run pointer analysis
   pta.analyze(module, entryName);
 
+  llvm::outs() << timestamp() << " Start Build Trace\n";
   // build all threads starting from this main func
   auto const mainEntry = pta::GT::getEntryNode(pta.getCallGraph());
   // Program trace needs to hold a unique ptr to the entry thread

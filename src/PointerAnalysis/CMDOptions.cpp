@@ -36,7 +36,7 @@ cl::opt<pta::IndirectResolveOption> INDIRECT_OPTION(
                    "make sure all the functions are inserted to callgraph")),
     cl::init(IndirectResolveOption::WITH_LIMIT));
 cl::opt<unsigned> Max_Indirect_Target("Max_Indirect_Target",
-                                      cl::desc("Only for WITH_LIMIT: the max size of indirect targets"), cl::init(999));
+                                      cl::desc("Only for WITH_LIMIT: the max size of indirect targets"), cl::init(1));
 cl::opt<unsigned> ANON_REC_LIMIT(
     "ANON_REC_LIMIT",
     cl::desc("The upperbound of the total size of recursively-created anonymous objects in a program"), cl::init(999));

@@ -11,6 +11,8 @@ limitations under the License.
 
 #pragma once
 
+#include <string>
+
 // TODO: actually impement logs
 #define LOG_INTERNAL(level, ...)
 
@@ -19,3 +21,5 @@ limitations under the License.
 #define LOG_INFO(...) LOG_INTERNAL(spdlog::level::info, __VA_ARGS__)
 #define LOG_WARN(...) LOG_INTERNAL(spdlog::level::warn, __VA_ARGS__)
 #define LOG_ERROR(...) LOG_INTERNAL(spdlog::level::err, __VA_ARGS__)
+
+std::string timestamp();

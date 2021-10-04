@@ -51,6 +51,7 @@ set(racedetect-lib-sources
     Analysis/SimpleArrayAnalysis.cpp
     IR/Builder.cpp
     IR/IR.cpp
+    Logging/Log.cpp
     Trace/Event.cpp
     Trace/EventImpl.cpp
     Trace/ProgramTrace.cpp

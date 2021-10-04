@@ -13,9 +13,17 @@ limitations under the License.
 
 using namespace race;
 
-const std::multiset<const pta::ObjTy *> &ReadEventImpl::getAccessedMemory() const { return accessedMemory; }
+const std::multiset<const pta::ObjTy *> ReadEventImpl::getAccessedMemory() const {
+  std::multiset<const pta::ObjTy *> ptsTo;
+  this->info->thread->program.pta.getPointsTo(this->info->context, this->read->getAccessedValue(), ptsTo);
+  return ptsTo;
+}
 
-const std::multiset<const pta::ObjTy *> &WriteEventImpl::getAccessedMemory() const { return accessedMemory; }
+const std::multiset<const pta::ObjTy *> WriteEventImpl::getAccessedMemory() const {
+  std::multiset<const pta::ObjTy *> ptsTo;
+  this->info->thread->program.pta.getPointsTo(this->info->context, this->write->getAccessedValue(), ptsTo);
+  return ptsTo;
+}
 
 const pta::CallGraphNodeTy *ForkEventImpl::getThreadEntry() const {
   auto entryVal = fork->getThreadEntry();

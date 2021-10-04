@@ -20,7 +20,7 @@ limitations under the License.
 
 namespace pta {
 using originCtx = KOrigin<3>;
-using ctx = HybridCtx<originCtx, KCallSite<1>>;
+using ctx = originCtx;
 using MemModel = cpp::CppMemModel<ctx>;
 using CallGraphNodeTy = CallGraphNode<ctx>;
 using CT = CtxTrait<ctx>;

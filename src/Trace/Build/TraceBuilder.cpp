@@ -147,7 +147,7 @@ void race::buildTrace(const pta::CallGraphNodeTy *node, ThreadBuildState &state)
 
       if (call->isIndirect()) {
         // TODO: handle indirect
-        llvm::errs() << "Skipping indirect call: " << *call << "\n";
+        // llvm::errs() << "Skipping indirect call: " << *call << "\n";
         continue;
       }
 
