@@ -73,8 +73,11 @@ int main(int argc, char** argv) {
   llvm::outs() << "Total Races Detected: " << report.size() << "\n";
 
   if (!DumpJSON.empty()) {
-    report.dumpReport();
-    llvm::outs() << "JSON Report generated at ./races.json\n";
+    if (DumpJSON.find(".json") == std::string::npos) {
+      DumpJSON += ".json";
+    }
+    report.dumpReport(DumpJSON);
+    llvm::outs() << "JSON Report generated at ./" << DumpJSON << "\n";
   }
 
   return 0;
