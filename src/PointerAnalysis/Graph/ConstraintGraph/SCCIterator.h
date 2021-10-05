@@ -66,7 +66,7 @@ class SCCIterator : public llvm::iterator_facade_base<SCCIterator<ctx, cons, rev
   SccTy CurrentSCC;
 
   /// BitVector that tracks the node that haven't been visited
-  /// since contraint graph are not always connected.
+  /// since constraint graph are not always connected.
   llvm::BitVector visitedNode;
   llvm::BitVector trueVisitedNode;
 

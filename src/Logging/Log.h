@@ -13,7 +13,7 @@ limitations under the License.
 
 #include <string>
 
-// TODO: actually impement logs
+// TODO: actually implement logs
 #define LOG_INTERNAL(level, ...)
 
 #define LOG_TRACE(...) LOG_INTERNAL(spdlog::level::trace, __VA_ARGS__)

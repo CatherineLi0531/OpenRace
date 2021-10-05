@@ -69,7 +69,7 @@ const Value *FICanonicalizer::stripPointerCastsAndOffsets(const Value *V) {
       if (auto CB = dyn_cast<CallBase>(V)) {
         if (const Value *RV = CB->getReturnedArgOperand()) {
           // the argument is also the return pointer,
-          // this can increase both performance and accuarcy if it is
+          // this can increase both performance and accuracy if it is
           // ever used but it seems no one use it
           V = RV;
           continue;

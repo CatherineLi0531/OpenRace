@@ -282,7 +282,7 @@ class PartialUpdateSolver : public SolverBase<LangModel, PartialUpdateSolver<Lan
 
             // ensure that ptr is visited by SCCIterator
             copyWorkList.reset(ptr->getNodeID());
-            // the pts of ptr has been updated, so need to be revisted by
+            // the pts of ptr has been updated, so need to be revisited by
             // load/store
             lsWorkList.reset(ptr->getNodeID());
           });

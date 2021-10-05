@@ -133,7 +133,7 @@ template <IR::Type Start, IR::Type End>
 bool inSame(const Event *event1, const Event *event2) {
   assert(_fromSameParallelRegion(event1, event2) && "events must be from same omp parallel region");
 
-  // We assume that becuase each thread is executing the same parallel region
+  // We assume that because each thread is executing the same parallel region
   // the number and ordering of regions should be the same on each thread.
 
   // Count the number of regions and return the index of the region containing the event
@@ -272,7 +272,7 @@ std::vector<const llvm::BasicBlock *> &ReduceAnalysis::computeGuardedBlocks(Redu
 
     Our logic makes the following assumptions:
       - There is a switch after the reduce call
-      - the default case on the switch is the end fo the reduce code
+      - the default case on the switch is the end of the reduce code
       - The default case post-dominates the switch
 
     If these assumptions are true, we can get the blocks that make up

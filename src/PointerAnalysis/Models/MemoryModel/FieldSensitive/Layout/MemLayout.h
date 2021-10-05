@@ -34,7 +34,7 @@ class MemLayout {
   // By byte. If the bit is set, the offset is valid (not in the middle of a
   // primary type)
   llvm::SparseBitVector<> elementLayout;
-  // By byte. If the bit is set, the (physical) offset is for a speical object;
+  // By byte. If the bit is set, the (physical) offset is for a special object;
   llvm::SparseBitVector<> specialLayout;
 
   // seems the test on sparsebitvector can become bottleneck, cache it using

@@ -69,7 +69,7 @@ class CallGraphNode : public NodeBase<CallEdge, CallGraphNode<ctx>> {
 
   CallGraphNode(const ctx *C, const llvm::Instruction *I, const llvm::Value *V, NodeID id)
       : super(id), kind(CallKind::Indirect), target(C, I, V, this) {
-    // V is not neccessarily be the called value of I, as it can be intercepted!
+    // V is not necessarily be the called value of I, as it can be intercepted!
   }
 
   CallGraphNode(const ctx *C, const llvm::Instruction *I, NodeID id)

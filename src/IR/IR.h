@@ -210,7 +210,7 @@ class BarrierIR : public IR {
 
 // CallIR is the only class in IR.h that can be concrete.
 // Most function calls should use CallIR's public constructor.
-// In some special cases, we want to note calls to specifc functions, such as omp_for_init.
+// In some special cases, we want to note calls to specific functions, such as omp_for_init.
 // In these rare special cases there can be sub-types that inherit from CallIR and use the protected constructor.
 class CallIR : public IR {
   const llvm::CallBase *inst;

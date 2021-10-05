@@ -112,7 +112,7 @@ class InDirectCallSite {
 
   [[nodiscard]] inline const llvm::Value *getValue() const {
     if (funPtr != nullptr) {
-      // overriden by language model.
+      // overridden by language model.
       return funPtr;
     }
     return callSite.getCalledValue();

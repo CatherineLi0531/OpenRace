@@ -303,7 +303,7 @@ class ConsGraphBuilder : public llvm::CtxInstVisitor<ctx, SubClass>, public PtrN
     auto aIt = CS.arg_begin();       // actual
     auto fIt = callee->arg_begin();  // formal
 
-    // some low-level bitcast does not maintain the type equvilance....
+    // some low-level bitcast does not maintain the type equivalence....
     while (fIt != callee->arg_end() && aIt != CS.arg_end()) {
       const llvm::Value *actual = *aIt;
       const llvm::Argument *formal = &*fIt;
@@ -547,7 +547,7 @@ class ConsGraphBuilder : public llvm::CtxInstVisitor<ctx, SubClass>, public PtrN
         return;
       }
       // else create a new PtrNode to catch the returned pointer
-      // the　COPY edge will then be added in OnNewCallEdge() where callee
+      // the COPY edge will then be added in OnNewCallEdge() where callee
       // is guaranteed to be initialized already
       getOrCreatePtrNode(context, &CB);
     }
@@ -616,7 +616,7 @@ class ConsGraphBuilder : public llvm::CtxInstVisitor<ctx, SubClass>, public PtrN
   // inline void visitInsertElementInst(llvm::InsertElementInst &I, const ctx *context) {}
   // inline void visitShuffleVectorInst(llvm::ShuffleVectorInst &I, const ctx *context) {}
 
-  // // instrinsic instruction classes.
+  // // intrinsic instruction classes.
   // inline void visitMemSetInst(llvm::MemSetInst &I, const ctx *context) {}
   // inline void visitMemMoveInst(llvm::MemMoveInst &I, const ctx *context) {}
 

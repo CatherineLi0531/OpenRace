@@ -166,7 +166,7 @@ class ConstraintGraph : public GraphBase<CGNodeBase<ctx>, Constraints> {
     }
   }
 
-  // IMPORTANT: does not guaranttee that the same node will not be added twice
+  // IMPORTANT: does not guarantee that the same node will not be added twice
   // caller should enforce it
   template <typename Node, typename PT, typename... Args>
   inline Node *addCGNode(Args &&...args) {
@@ -175,10 +175,10 @@ class ConstraintGraph : public GraphBase<CGNodeBase<ctx>, Constraints> {
 
     if (node->getType() == CGNodeKind::ObjNode) {
       // create an anon node which take the address of the node
-      // Convention! objnode_id + 1 = anonomyous node
+      // Convention! objnode_id + 1 = anonymous node
       CGPtrNode<ctx> *anonNode = addCGNode<CGPtrNode<ctx>, PT>();
       node->insertConstraint(anonNode, Constraints::addr_of);
-      // Anonmyous Node can points to the object
+      // Anonymous Node can points to the object
       // PT::insert(anonNode->getNodeID(), node->getNodeID());
       if constexpr (!std::is_same<Node, CGPtrNode<ctx>>::value) {
         // this is an object node

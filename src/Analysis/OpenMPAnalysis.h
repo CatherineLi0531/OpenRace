@@ -107,7 +107,7 @@ class OpenMPAnalysis {
   bool guardedBySameTID(const Event* event1, const Event* event2) const;
 
   // return true if both events are inside of the same reduce region
-  // we do not distinguise between reduce and reduce_nowait
+  // we do not distinguish between reduce and reduce_nowait
   bool inSameReduce(const Event* event1, const Event* event2) const;
 
   // return true if both events are in compatible sections

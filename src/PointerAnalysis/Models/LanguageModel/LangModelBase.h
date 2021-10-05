@@ -25,7 +25,7 @@ template <typename ctx, typename MemModel, typename PtsTy, typename SubClass>
 class LangModelBase : public ConsGraphBuilder<ctx, MemModel, PtsTy, SubClass> {
  public:
   // **** start ****
-  // five functions need to be overriden by the subclass
+  // five functions need to be overridden by the subclass
 
   // determine whether the resolved indirect call is compatible
   inline bool isCompatible(const llvm::Instruction *callsite, const llvm::Function *target) {

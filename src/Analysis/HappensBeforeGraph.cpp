@@ -88,7 +88,7 @@ const ForkEvent *getCorrespondingFork(const JoinEvent *join, const ProgramTrace 
   // now we only store the corresponding fork for OpenMPTaskJoin
   if (auto const fork = join->getForkEvent()) return fork.value();
 
-  // Else need to use hueristics to match join to a fork
+  // Else need to use heuristics to match join to a fork
   auto const joinHandle = join->getIRInst()->getThreadHandle();
   // Check for fork on this thread with matching handle first
   if (auto fork = getForkWithHandle(joinHandle, join->getThread()); fork != nullptr) {
@@ -166,7 +166,7 @@ HappensBeforeGraph::HappensBeforeGraph(const race::ProgramTrace &program) {
   // an event in the map (meaning a previous event has visited this barrier)
   // the dual-edge is added between the prev event and the current event,
   // and the current event is added to the map so that the next event to reach
-  // this barrier will add the dual-edge with the curent event.
+  // this barrier will add the dual-edge with the current event.
   std::map<const llvm::Instruction *, const BarrierEvent *> lastBarrier;
   auto addBarrierEdge = [&lastBarrier, this](const BarrierEvent *event) {
     auto const barrierInst = event->getInst();

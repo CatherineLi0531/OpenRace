@@ -90,7 +90,7 @@ Type *DefaultHeapModel::inferCallocType(const Function *fun, const Instruction *
           return getUnboundedArrayTy(elemType);
         }
       } else {
-        // TODO: maybe conservatively treat it as field insenstive object?
+        // TODO: maybe conservatively treat it as field insensitive object?
         return getUnboundedArrayTy(elemType);
       }
     }

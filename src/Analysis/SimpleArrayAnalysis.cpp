@@ -734,7 +734,7 @@ std::pair<Optional<int64_t>, Optional<int64_t>> OpenMPLoopManager::resolveOMPLoo
 }
 
 const SCEVAddRecExpr *OpenMPLoopManager::getOMPLoopSCEV(const llvm::SCEV *root) const {
-  // get the outter-most loop (omp loop should always be the outter-most
+  // get the outer-most loop (omp loop should always be the outer-most
   // loop within an OpenMP region)
   auto omp = findSCEVExpr(root, [&](const llvm::SCEV *S) -> bool {
     if (auto addRec = llvm::dyn_cast<llvm::SCEVAddRecExpr>(S)) {
@@ -813,7 +813,7 @@ bool race::SimpleArrayAnalysis::canIndexOverlap(const race::MemAccessEvent *even
   // the rewriter here move sext adn zext operations into the deepest scope
   // e.g., (4 + (4 * (sext i32 (2 * %storemerge2) to i64))<nsw> + %a) will be rewritten to
   //   ==> (4 + (8 * (sext i32 %storemerge2 to i64)) + %a)
-  // this will simplied the scev expression as sext and zext are considered as variable instead of constant
+  // this will simplify the scev expression as sext and zext are considered as variable instead of constant
   // during the computation between two scev expression.
   scev1 = rewriter.visit(scev1);
   scev2 = rewriter.visit(scev2);
