@@ -104,6 +104,15 @@ TEST_LL("task-master-single-yes", "task-master-single-yes.ll",
                  "task-master-single-yes.c:14:16 task-master-single-yes.c:18:14"))
 TEST_LL("task-tid-no", "task-tid-no.ll", NORACE)
 TEST_LL("task-yes", "task-yes.ll", EXPECTED("task-yes.c:13:14 task-yes.c:13:14"))
+TEST_LL("task-single-edge-case-no", "task-single-edge-case-no.ll", NORACE)
+
+// PTA cannot detect shared data in nested tasks?
+// TEST_LL("task-single-edge-case-yes", "task-single-edge-case-yes.ll",
+//         EXPECTED("task-single-edge-case-yes.c:14:?? task-single-edge-case-yes.c:19:??"))
+// TEST_LL("tasks-nested-shared-yes", "tasks-nested-shared-yes.ll",
+//         EXPECTED("tasks-nested-shared-yes.c:14:?? tasks-nested-shared-yes.c:17:??",
+//                  "tasks-nested-shared-yes.c:14:?? tasks-nested-shared-yes.c:21:??",
+//                  "tasks-nested-shared-yes.c:17:?? tasks-nested-shared-yes.c:21:??"))
 
 // threadlocal
 TEST_LL("threadlocal-no", "threadlocal-no.ll", NORACE)

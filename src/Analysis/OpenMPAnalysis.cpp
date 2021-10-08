@@ -126,27 +126,27 @@ std::optional<Region> getContainingRegion(const Event *event) {
   return std::nullopt;
 }
 
+// Count the number of regions and return the index of the region containing the event
+//
+// This assumes that because each thread is executing the same parallel region
+// the number and ordering of regions should be the same on each thread.
+template <IR::Type Start, IR::Type End>
+std::optional<size_t> getRegionID(const Event *event) {
+  auto const regions = getRegions<Start, End>(event->getThread());
+  auto region = std::find_if(regions.begin(), regions.end(),
+                             [&event](auto const &region) { return region.contains(event->getID()); });
+  if (region == regions.end()) return std::nullopt;
+  return std::distance(regions.begin(), region);
+}
+
 // return true if both events are inside of the region marked by Start and End
 // see getRegions for more detail on regions
-// (event1 is always from Thread1, i.e., the master thread, which has the full thread trace with all IRs)
 template <IR::Type Start, IR::Type End>
 bool inSame(const Event *event1, const Event *event2) {
   assert(_fromSameParallelRegion(event1, event2) && "events must be from same omp parallel region");
 
-  // We assume that because each thread is executing the same parallel region
-  // the number and ordering of regions should be the same on each thread.
-
-  // Count the number of regions and return the index of the region containing the event
-  auto const getRegionID = [](const Event *event) -> std::optional<long> {
-    auto const regions = getRegions<Start, End>(event->getThread());
-    auto region = std::find_if(regions.begin(), regions.end(),
-                               [&event](auto const &region) { return region.contains(event->getID()); });
-    if (region == regions.end()) return std::nullopt;
-    return std::distance(regions.begin(), region);
-  };
-
-  auto const region1 = getRegionID(event1);
-  auto const region2 = getRegionID(event2);
+  auto const region1 = getRegionID<Start, End>(event1);
+  auto const region2 = getRegionID<Start, End>(event2);
 
   if (!region1 || !region2) {
     return false;
@@ -233,8 +233,61 @@ bool OpenMPAnalysis::fromSameParallelRegion(const Event *event1, const Event *ev
   return _fromSameParallelRegion(event1, event2);
 }
 
+namespace {
+
+// If this event is within a task or nested tasks, get the spawn site of the original task spawned by the OpenMP thread
+// return None if event is not in a task spawned within OpenMP region
+std::optional<const ForkEvent *> getOuterTaskSpawn(const Event *event) {
+  if (!event->getThread().spawnSite) return std::nullopt;
+
+  // This event should be on a task thread
+  auto taskFork = event->getThread().spawnSite.value();
+  if (taskFork->getIRType() != IR::Type::OpenMPTaskFork) return std::nullopt;
+
+  // If it was spawned by the main thread return None
+  auto spawnSite = taskFork->getThread().spawnSite;
+  if (!spawnSite) return std::nullopt;
+
+  // If this task was spawned by an OpenMP thread, we have found the outermost task
+  if (spawnSite.value()->getIRType() == IR::Type::OpenMPFork) return taskFork;
+
+  // Else keep looking up another level
+  return getOuterTaskSpawn(taskFork);
+}
+
+// This is a weird edge-case case caused by the fact that singel can be "any" thread
+// but for the purpose of spawning tasks we consider the task spawn to be put on the first thread.
+// e.g.
+//  #pragma omp single
+//      #pragma omp task
+//      {  write(global); }
+//
+//      #pragma omp taskwait
+//      read(global);
+//
+// The single code will be added to the trace on both OpenMP thread traces
+// but the task will only be spawned on the first thread trace.
+// The task code will have a HB relationship with the taskwait on the first threadtrace
+// but will still be allowed torace with the read on the second thread trace.
+bool isTaskSingleEdgeCase(const Event *event1, const Event *event2) {
+  if (auto const outerSpawn = getOuterTaskSpawn(event1)) {
+    return _inSameSingleBlock(outerSpawn.value(), event2);
+  }
+
+  if (auto const outerSpawn = getOuterTaskSpawn(event2)) {
+    return _inSameSingleBlock(outerSpawn.value(), event1);
+  }
+
+  return false;
+}
+}  // namespace
+
 bool OpenMPAnalysis::inSameSingleBlock(const Event *event1, const Event *event2) const {
-  return _inSameSingleBlock(event1, event2);
+  return _inSameSingleBlock(event1, event2)
+         // Or if one event was spawned in a task inside of a single region
+         // and the other event is in the same single region.
+         // See isTaskSingleEdgeCase definition for detailed comment.
+         || isTaskSingleEdgeCase(event1, event2);
 }
 
 bool OpenMPAnalysis::guardedBySameTID(const Event *event1, const Event *event2) const {
