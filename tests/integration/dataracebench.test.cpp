@@ -289,8 +289,9 @@ TEST_LL("DRB113", "DRB113-default-orig-no.ll", NORACE)
 // 115 simd
 // TEST_LL("DRB115", /*TODO*/, EXPECTED(/*TODO*/))
 
-// 116 target teams
-// TEST_LL("DRB116", /*TODO*/, EXPECTED(/*TODO*/))
+TEST_LL("DRB116", "DRB116-target-teams-orig-yes.ll",
+        EXPECTED("DRB116-target-teams-orig-yes.c:66:10 DRB116-target-teams-orig-yes.c:66:10",
+                 "DRB116-target-teams-orig-yes.c:66:10 DRB116-target-teams-orig-yes.c:66:10"))
 
 // 117 nested tasks
 // TEST_LL("DRB117", /*TODO*/, EXPECTED(/*TODO*/))

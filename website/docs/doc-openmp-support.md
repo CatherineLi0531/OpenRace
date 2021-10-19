@@ -50,7 +50,7 @@ Any usage of `simd` is not supported by OpenRace. Any races present in SIMD code
 
 ### Ordered/Depend
 
-The `depend` clause can be copmbined with various OpenMP features to describe a ordering between different tasks.
+The `depend` clause can be combined with various OpenMP features to describe a ordering between different tasks.
 
 OpenRace has no support for `depend` and the described orderings will not be modeled by the tool.
 
