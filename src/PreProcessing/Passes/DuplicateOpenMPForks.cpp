@@ -60,6 +60,10 @@ void duplicateForkCall(llvm::CallBase *ompFork) {
 }  // namespace
 
 void duplicateOpenMPForks(llvm::Module &module) {
+  // Used to model when num_threads(1) or num_teams(1) is used on a fork
+  // Catch the pushed value of num_threads/teams, then avoid duplicating the next fork call if it was 1
+  bool soloGroup = false;
+
   for (auto &function : module.getFunctionList()) {
     for (auto &basicblock : function.getBasicBlockList()) {
       for (auto &inst : basicblock.getInstList()) {
@@ -67,9 +71,17 @@ void duplicateOpenMPForks(llvm::Module &module) {
         if (!call || !call->getCalledFunction() || !call->getCalledFunction()->hasName()) continue;
 
         auto const funcName = call->getCalledFunction()->getName();
+
+        if (OpenMPModel::isNumThreads(funcName) || OpenMPModel::isNumTeams(funcName)) {
+          soloGroup = llvm::dyn_cast<llvm::ConstantInt>(call->arg_end() - 1)->isOne();
+        }
+
         if (OpenMPModel::isFork(funcName) || OpenMPModel::isForkTeams(funcName)) {
-          replaceForkLocArg(call);
-          duplicateForkCall(call);
+          if (!soloGroup) {
+            replaceForkLocArg(call);
+            duplicateForkCall(call);
+          }
+          soloGroup = false;
         }
       }
     }

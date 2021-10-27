@@ -116,3 +116,6 @@ TEST_LL("task-single-edge-case-no", "task-single-edge-case-no.ll", NORACE)
 
 // threadlocal
 TEST_LL("threadlocal-no", "threadlocal-no.ll", NORACE)
+
+// num_threads(1)
+TEST_LL("numthreads1-no", "numthreads1-no.ll", NORACE)

@@ -172,44 +172,43 @@ std::shared_ptr<const FunctionSummary> generateFunctionSummary(const llvm::Funct
           // duplicate omp preprocessing should duplicate all omp fork calls
           auto ompFork = std::make_shared<OpenMPFork>(callInst, OpenMPFork::ThreadType::Master);
           auto twinOmpFork = getTwinOmpFork(ompFork);
-          if (!twinOmpFork) {
-            // without duplicated fork we cannot detect any races in omp region so just skip it
-            llvm::errs() << "Encountered non-duplicated omp fork instruction: " << *callInst << "\n";
-            llvm::errs() << "Next Inst was: " << *callInst->getNextNode() << "\n";
-            llvm::errs() << "Skipping entire OpenMP region\n";
-            continue;
-          }
-          // We matched the next inst as twin omp fork
-          ++it;
 
-          // push the two forks and joins such tha the two threads created for the parallel region are in parallel
+          // We matched the next inst as twin omp fork
+          if (twinOmpFork) {
+            ++it;
+          }
+
+          // push the two forks and joins such that the two threads created for the parallel region are in parallel
           summary.push_back(ompFork);
-          summary.push_back(twinOmpFork);
+          if (twinOmpFork) {
+            summary.push_back(twinOmpFork);
+          }
 
           // omp fork has implicit join, so immediately join both threads
           summary.push_back(std::make_shared<OpenMPJoin>(ompFork));
-          summary.push_back(std::make_shared<OpenMPJoin>(twinOmpFork));
+          if (twinOmpFork) {
+            summary.push_back(std::make_shared<OpenMPJoin>(twinOmpFork));
+          }
         } else if (OpenMPModel::isForkTeams(funcName)) {
           // duplicate omp preprocessing should duplicate all omp fork calls
           auto ompForkTeams = std::make_shared<OpenMPForkTeams>(callInst);
           auto twinOmpForkTeams = getTwinOmpForkTeams(ompForkTeams);
-          if (!twinOmpForkTeams) {
-            // without duplicated fork we cannot detect any races in omp region so just skip it
-            llvm::errs() << "Encountered non-duplicated omp fork instruction: " << *callInst << "\n";
-            llvm::errs() << "Next Inst was: " << *callInst->getNextNode() << "\n";
-            llvm::errs() << "Skipping entire OpenMP region\n";
-            continue;
-          }
-          // We matched the next inst as twin omp fork
-          ++it;
 
+          // We matched the next inst as twin omp fork
+          if (twinOmpForkTeams) {
+            ++it;
+          }
           // push the two forks and joins such tha the two threads created for the parallel region are in parallel
           summary.push_back(ompForkTeams);
-          summary.push_back(twinOmpForkTeams);
+          if (twinOmpForkTeams) {
+            summary.push_back(twinOmpForkTeams);
+          }
 
           // omp fork teams has implicit join, so immediately join both threads
           summary.push_back(std::make_shared<OpenMPJoinTeams>(ompForkTeams));
-          summary.push_back(std::make_shared<OpenMPJoinTeams>(twinOmpForkTeams));
+          if (twinOmpForkTeams) {
+            summary.push_back(std::make_shared<OpenMPJoinTeams>(twinOmpForkTeams));
+          }
         } else if (isPrintf(funcName)) {
           // TODO: model as read?
         } else {
