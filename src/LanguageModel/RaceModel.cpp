@@ -12,6 +12,7 @@ limitations under the License.
 #include "LanguageModel/RaceModel.h"
 
 #include "IR/IRImpls.h"
+#include "LanguageModel/Cuda.h"
 #include "LanguageModel/OpenMP.h"
 #include "LanguageModel/pthread.h"
 
@@ -48,6 +49,10 @@ InterceptResult RaceModel::interceptFunction(const ctx * /* callerCtx */, const 
     return {task.getThreadEntry(), InterceptResult::Option::EXPAND_BODY};
   }
 
+  if (CudaModel::isKernelLaunch(funcName)) {
+    race::CudaGridFork grid(llvm::cast<CallBase>(callsite));
+    return {grid.getThreadEntry(), InterceptResult::Option::EXPAND_BODY};
+  }
   // By default always try to expand the function body
   return {F, InterceptResult::Option::EXPAND_BODY};
 }
@@ -101,12 +106,46 @@ bool RaceModel::interceptCallSite(const CtxFunction<ctx> *caller, const CtxFunct
   }
 
   if (OpenMPModel::isTask(funcName)) {
-    // Link 3rd arg of __kmpc_omp_task (kmp_tsking.cpp:1684) with task functions 2nd
+    // Link 3rd arg of __kmpc_omp_task (kmp_tasking.cpp:1684) with task functions 2nd
     auto calleeArg = callee->getFunction()->arg_begin();
     std::advance(calleeArg, 1);
     PtrNode *formal = this->getPtrNode(callee->getContext(), calleeArg);
     PtrNode *actual = this->getPtrNode(caller->getContext(), call->getArgOperand(2));
     this->consGraph->addConstraints(actual, formal, Constraints::copy);
+    return true;
+  }
+
+  // TODO: implement streams
+  if (CudaModel::isStreamCreate(funcName)) {
+    // This creates PtrNode
+  }
+  if (CudaModel::isKernelLaunch(funcName){
+    auto calleeArg = callee->getFunction()->arg_begin();
+    std::advance(calleeArg, 1);
+    PtrNode *grid;
+    PtrNode *block1, block2;
+    PtrNode *thread11, thread12, thread21, thread22;  // 2 threads per block
+
+    // Set PtrNodes
+    // int or dim3 numBlocks;
+    // int or dim3 numThreads;
+    // How do we connect this to corresponding stream?
+
+    this->consGraph->addConstraints(grid, block1, Constraints::copy);
+
+    this->consGraph->addConstraints(block1, thread11, Constraints::copy);
+    if (numThreads != 1) {
+      this->consGraph->addConstraints(block1, thread12, Constraints::copy);
+    }
+
+    if (numBlocks != 1) {
+      this->consGraph->addConstraints(grid, block2, Constraints::copy);
+      this->consGraph->addConstraints(block2, thread21, Constraints::copy);
+      if (numThreads != 1) {
+        this->consGraph->addConstraints(block2, thread22, Constraints::copy);
+      }
+    }
+
     return true;
   }
 
@@ -143,6 +182,8 @@ bool RaceModel::isCompatible(const llvm::Instruction *callsite, const llvm::Func
     // omp fork's callback's return type should be void
     return target->getArg(1)->getType() == llvm::Type::getInt32PtrTy(callsite->getContext()) &&
            target->getReturnType()->isVoidTy();
+  } else if (CudaModel::isKernelLaunch(threadCreate->getName())) {
+    // TODO: I am not sure what compatible means here
   }
 
   llvm_unreachable("unrecognizable function");
@@ -197,13 +238,13 @@ bool RaceModel::isHeapAllocAPI(const llvm::Function *F, const llvm::Instruction 
   }
   auto const name = F->getName();
   return name.equals("malloc") || name.equals("calloc") || name.equals("_Zname") || name.equals("_Znwm") ||
-         name.equals("__kmpc_omp_task_alloc");
+         name.equals("__kmpc_omp_task_alloc") || name.equals("cudaMalloc");
 }
 
 namespace {
 // TODO: better way of handling these
-const std::set<llvm::StringRef> origins{"pthread_create", "__kmpc_fork_call", "__kmpc_omp_task",
-                                        "__kmpc_omp_task_alloc", "__kmpc_fork_teams"};
+const std::set<llvm::StringRef> origins{"pthread_create",        "__kmpc_fork_call",  "__kmpc_omp_task",
+                                        "__kmpc_omp_task_alloc", "__kmpc_fork_teams", "cudaMalloc"};
 }  // namespace
 
 bool RaceModel::isInvokingAnOrigin(const originCtx * /* prevCtx */, const llvm::Instruction *I) {

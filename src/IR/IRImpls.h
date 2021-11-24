@@ -13,6 +13,8 @@ limitations under the License.
 #include <LanguageModel/OpenMP.h>
 #include <llvm/IR/CallSite.h>
 
+#include <pair>
+
 #include "IR/IR.h"
 
 namespace race {
@@ -181,7 +183,7 @@ class OpenMPTaskFork : public ForkIR {
 };
 
 class OpenMPForkTeams : public ForkIR {
-  // TODO: put link here
+  // https://github.com/llvm/llvm-project-staging/blob/cc926dc3a87af7023aa9b6c392347a0a8ed6949b/openmp/runtime/src/kmp_csupport.cpp#L392
   // @param loc  source location information
   // @param argc  total number of arguments in the ellipsis
   // @param microtask  pointer to callback routine consisting of outlined parallel
@@ -207,6 +209,63 @@ class OpenMPForkTeams : public ForkIR {
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static inline bool classof(const IR *e) { return e->type == Type::OpenMPForkTeams; }
 };
+
+// Corresponds to cudaStreamCreate(). There is an implicit default stream stream0. Streams themselves have no
+// commands, only that they hold grid forks
+class CudaStreamFork : public ForkIR {};
+
+// Corresponds to kernel<<<>>>. Grids themselves have no commands, only that they hold block forks
+class CudaGridFork : public ForkIR {
+  // TODO: URL
+
+  // KernelFunc(grid dimensionality (either int or "dim3" tuple), block dimensionality (either int or "dim3" tuple),
+  // shared memory???, stream mapping (int) )
+  constexpr static unsigned int kernelFunctionOffset = 0;
+  constexpr static unsigned int blockDimOffset = 1;
+  constexpr static unsigned int threadDimOffset = 2;
+  constexpr static unsigned int streamMappingOffset = 4;
+
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaGridFork(const llvm::CallBase *inst) : ForkIR(Type::CudaGridFork), inst(inst) {}
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return getThreadEntry(); }
+
+  [[nodiscard]] const std::pair<int, llvm::Value> *getThreadEntry() const override {
+    auto blockDim = inst->getArgOperand(blockDimOffset)->stripPointerCasts();
+    auto threadDim = inst->getArgOperand(threadDimOffset)->stripPointerCasts();
+    auto streamMapping = inst->getArgOperand(streamMappingOffset)->stripPointerCasts();
+
+    auto taskAllocCall = llvm::dyn_cast<llvm::CallBase>(taskAlloc);
+    assert(taskAllocCall && "Failed to find task alloc call");
+    assert(OpenMPModel::isTaskAlloc(taskAllocCall->getCalledFunction()->getName()) && "failed to find task alloc");
+
+    return std::make_pair(streamMapping, taskAllocCall->getArgOperand(taskEntryOffset)->stripPointerCasts());
+  }
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static inline bool classof(const IR *e) { return e->type == Type::CudaGridFork; }
+};
+
+// Implied by grid fork, these match up to the first argument to grid forks. Blocks have no commands, only that they
+// hold warp forks
+class CudaBlockFork : public ForkIR {};
+
+// Implied by grid fork, these match up to ceil(the second argument to grid forks / 32). Warps have no commands, only
+// that they hold thread forks
+class CudaWarpFork : public ForkIR {};
+
+// Implied by grid fork, these should be done as two per warp
+class CudaThreadFork : public ForkIR {};
+
+/** Cuda 9+
+
+// Corresponds to cg::partition
+class CudaCooperativeGroupFork : public ForkIR {};
+*/
 
 // ==================================================================
 // ================== JoinIR Implementations ========================
@@ -273,6 +332,18 @@ class OpenMPJoinTeams : public JoinIR {
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static inline bool classof(const IR *e) { return e->type == Type::OpenMPJoinTeams; }
+};
+
+// Corresponds to cudaDeviceSynchronize()
+class CudaDeviceJoin : public JoinIR {
+  std::shared_ptr<CudaStreamFork> fork;
+
+ public:
+  explicit CudaDeviceJoin(const std::shared_ptr<CudaStreamFork> fork) : JoinIR(Type::CudaDeviceJoin), fork(fork) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return fork->getInst(); }
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return fork->getThreadHandle(); }
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static inline bool classof(const IR *e) { return e->type == Type::CudaDeviceJoin; }
 };
 
 // ==================================================================
@@ -394,6 +465,46 @@ class OpenMPBarrier : public BarrierIR {
 
   [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
 };
+
+// Corresponds to cudaStreamSynchronize()
+class CudaStreamBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaStreamBarrier(const llvm::CallBase *call) : BarrierIR(Type::CudaStreamBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+// Corresponds to __syncthreads()
+class CudaBlockBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaBlockBarrier(const llvm::CallBase *call) : BarrierIR(Type::CudaBlockBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+/** CUDA 9+
+
+// Corresponds to __syncwarp()
+class CudaWarpBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaWarpBarrier(const llvm::CallBase *call) : BarrierIR(Type::CudaWarpBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+// Corresponds to cg::synchronize() / g.sync()
+class CudaCooperativeGroupBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaCooperativeGroupBarrier(const llvm::CallBase *call)
+      : BarrierIR(Type::CudaCooperativeGroupBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+}
+*/
 
 // =================================================================
 // ================= Other Implementations =========================
