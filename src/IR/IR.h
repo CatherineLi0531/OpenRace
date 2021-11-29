@@ -46,7 +46,6 @@ class IR {
     OpenMPJoin,
     OpenMPTaskJoin,
     OpenMPJoinTeams,
-    CudaDeviceJoin,
     END_Join,
     Lock,
     PthreadMutexLock,
@@ -64,6 +63,7 @@ class IR {
     END_Unlock,
     Barrier,
     OpenMPBarrier,
+    CudaDeviceBarrier,
     CudaStreamBarrier,
     CudaBlockBarrier,
     // CudaWarpBarrier, // CUDA 9+

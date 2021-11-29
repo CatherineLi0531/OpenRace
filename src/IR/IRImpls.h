@@ -239,11 +239,11 @@ class CudaGridFork : public ForkIR {
     auto threadDim = inst->getArgOperand(threadDimOffset)->stripPointerCasts();
     auto streamMapping = inst->getArgOperand(streamMappingOffset)->stripPointerCasts();
 
-    auto taskAllocCall = llvm::dyn_cast<llvm::CallBase>(taskAlloc);
-    assert(taskAllocCall && "Failed to find task alloc call");
-    assert(OpenMPModel::isTaskAlloc(taskAllocCall->getCalledFunction()->getName()) && "failed to find task alloc");
+    // auto taskAllocCall = llvm::dyn_cast<llvm::CallBase>(taskAlloc);
+    // assert(taskAllocCall && "Failed to find task alloc call");
+    // assert(OpenMPModel::isTaskAlloc(taskAllocCall->getCalledFunction()->getName()) && "failed to find task alloc");
 
-    return std::make_pair(streamMapping, taskAllocCall->getArgOperand(taskEntryOffset)->stripPointerCasts());
+    return std::make_pair(streamMapping, NULL /*taskAllocCall->getArgOperand(taskEntryOffset)->stripPointerCasts()*/);
   }
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
@@ -332,18 +332,6 @@ class OpenMPJoinTeams : public JoinIR {
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static inline bool classof(const IR *e) { return e->type == Type::OpenMPJoinTeams; }
-};
-
-// Corresponds to cudaDeviceSynchronize()
-class CudaDeviceJoin : public JoinIR {
-  std::shared_ptr<CudaStreamFork> fork;
-
- public:
-  explicit CudaDeviceJoin(const std::shared_ptr<CudaStreamFork> fork) : JoinIR(Type::CudaDeviceJoin), fork(fork) {}
-  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return fork->getInst(); }
-  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return fork->getThreadHandle(); }
-  // Used for llvm style RTTI (isa, dyn_cast, etc.)
-  static inline bool classof(const IR *e) { return e->type == Type::CudaDeviceJoin; }
 };
 
 // ==================================================================
@@ -463,6 +451,15 @@ class OpenMPBarrier : public BarrierIR {
  public:
   explicit OpenMPBarrier(const llvm::CallBase *call) : BarrierIR(Type::OpenMPBarrier), inst(call) {}
 
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+// Corresponds to cudaDeviceSynchronize()
+class CudaDeviceBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaDeviceBarrier(const llvm::CallBase *call) : BarrierIR(Type::CudaDeviceBarrier), inst(call) {}
   [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
 };
 
