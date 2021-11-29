@@ -13,8 +13,6 @@ limitations under the License.
 #include <LanguageModel/OpenMP.h>
 #include <llvm/IR/CallSite.h>
 
-#include <pair>
-
 #include "IR/IR.h"
 
 namespace race {
@@ -221,9 +219,10 @@ class CudaGridFork : public ForkIR {
   // KernelFunc(grid dimensionality (either int or "dim3" tuple), block dimensionality (either int or "dim3" tuple),
   // shared memory???, stream mapping (int) )
   constexpr static unsigned int kernelFunctionOffset = 0;
-  constexpr static unsigned int blockDimOffset = 1;
-  constexpr static unsigned int threadDimOffset = 2;
-  constexpr static unsigned int streamMappingOffset = 4;
+
+  constexpr static unsigned int blockDimOffset = 0;
+  constexpr static unsigned int threadDimOffset = 1;
+  constexpr static unsigned int streamMappingOffset = 2;
 
   const llvm::CallBase *inst;
 
@@ -234,16 +233,13 @@ class CudaGridFork : public ForkIR {
 
   [[nodiscard]] const llvm::Value *getThreadHandle() const override { return getThreadEntry(); }
 
-  [[nodiscard]] const std::pair<int, llvm::Value> *getThreadEntry() const override {
-    auto blockDim = inst->getArgOperand(blockDimOffset)->stripPointerCasts();
-    auto threadDim = inst->getArgOperand(threadDimOffset)->stripPointerCasts();
-    auto streamMapping = inst->getArgOperand(streamMappingOffset)->stripPointerCasts();
+  [[nodiscard]] const llvm::Value *getThreadEntry() const override {
+    // auto gridFork = llvm::dyn_cast<llvm::CallBase>(inst->getArgOperand(kernelFunctionOffset)->stripPointerCasts());
+    // auto blockDim = gridFork->getArgOperand(blockDimOffset)->stripPointerCasts();
+    // auto threadDim = gridFork->getArgOperand(threadDimOffset)->stripPointerCasts();
+    // auto streamMapping = gridFork->getArgOperand(streamMappingOffset)->stripPointerCasts();
 
-    // auto taskAllocCall = llvm::dyn_cast<llvm::CallBase>(taskAlloc);
-    // assert(taskAllocCall && "Failed to find task alloc call");
-    // assert(OpenMPModel::isTaskAlloc(taskAllocCall->getCalledFunction()->getName()) && "failed to find task alloc");
-
-    return std::make_pair(streamMapping, NULL /*taskAllocCall->getArgOperand(taskEntryOffset)->stripPointerCasts()*/);
+    return inst->getArgOperand(kernelFunctionOffset)->stripPointerCasts();
   }
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)

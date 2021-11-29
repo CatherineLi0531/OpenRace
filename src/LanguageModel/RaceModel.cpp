@@ -119,19 +119,19 @@ bool RaceModel::interceptCallSite(const CtxFunction<ctx> *caller, const CtxFunct
   if (CudaModel::isStreamCreate(funcName)) {
     // This creates PtrNode
   }
-  if (CudaModel::isKernelLaunch(funcName){
+  if (CudaModel::isKernelLaunch(funcName)) {
     auto calleeArg = callee->getFunction()->arg_begin();
     std::advance(calleeArg, 1);
-    PtrNode *grid;
-    PtrNode *block1, block2;
-    PtrNode *thread11, thread12, thread21, thread22;  // 2 threads per block
+    // PtrNode *grid;
+    // PtrNode *block1, block2;
+    // PtrNode *thread11, thread12, thread21, thread22;  // 2 threads per block
 
     // Set PtrNodes
     // int or dim3 numBlocks;
     // int or dim3 numThreads;
     // How do we connect this to corresponding stream?
 
-    this->consGraph->addConstraints(grid, block1, Constraints::copy);
+    /*this->consGraph->addConstraints(grid, block1, Constraints::copy);
 
     this->consGraph->addConstraints(block1, thread11, Constraints::copy);
     if (numThreads != 1) {
@@ -145,6 +145,7 @@ bool RaceModel::interceptCallSite(const CtxFunction<ctx> *caller, const CtxFunct
         this->consGraph->addConstraints(block2, thread22, Constraints::copy);
       }
     }
+    */
 
     return true;
   }

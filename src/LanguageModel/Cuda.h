@@ -15,17 +15,9 @@ limitations under the License.
 #include <llvm/IR/Function.h>
 #include <llvm/IR/InstrTypes.h>
 
-// Model Progress:
-//     --Mapped--
-//         kernel<<<>>>
-//         cudaDeviceSynchronize
-//         __syncthreads
-//         cudaMalloc (independent of language model)
-//         cudaStreamSynchronize
-//
-//     --Not Mapped--
-//         cudaStreamCreate
-//         cudaStreamDestroy
+#include <set>
+
+//--Not Mapped--
 //         cudaStreamWaitEvent
 //         cudaStreamQuery
 //         cudaStreamAddCallback
@@ -33,7 +25,6 @@ limitations under the License.
 //         cudaEventCreate
 //         cudaEventDestroy
 //         cudaEventSynchronize
-//         cudaStreamWaitEvent
 //         cudaEventQuery
 //
 //         cudaSetDevice
@@ -56,7 +47,7 @@ limitations under the License.
 //
 //         MEMORY FUNCTIONS
 //
-//     --Analysis Independent (and therefore not supported)--
+// --Analysis Independent (and therefore not supported)--
 //         cudaStreamCreateWithPriority
 //         cudaDeviceSetLimit ?
 
@@ -64,34 +55,35 @@ limitations under the License.
 
 namespace CudaModel {
 
-namespace {
-
-// return true of funcName equals any name in names
-bool matchesAny(const llvm::StringRef& funcName, const std::vector<llvm::StringRef>& names) {
-  for (auto const& name : names) {
-    if (funcName.equals(name)) return true;
-  }
-  return false;
-}
-
-}  // namespace
-
 inline bool isSyncThreads(const llvm::StringRef& funcName) { return funcName.equals("llvm.nvvm.barrier0"); }
 inline bool isBlockBarrier(const llvm::StringRef& funcName) { return isSyncThreads(funcName); }
 
 inline bool isDeviceSynchronize(const llvm::StringRef& funcName) { return funcName.equals("cudaDeviceSynchronize"); }
 
+inline bool isStreamCreate(const llvm::StringRef& funcName) { return funcName.equals("cudaStreamCreate"); }
 inline bool isStreamBarrier(const llvm::StringRef& funcName) { return funcName.equals("cudaStreamSynchronize"); }
+inline bool isStreamDestroy(const llvm::StringRef& funcName) { return funcName.equals("cudaStreamDestroy"); }
 
 inline bool isForkGrid(const llvm::StringRef& funcName) { return funcName.equals("cudaLaunch"); }
 inline bool isKernelLaunch(const llvm::StringRef& funcName) { return isForkGrid(funcName); }
 
-const std::set<llvm::StringRef> atomics {
-  "_ZL9atomicAddPjj", "_ZL9atomicSubPjj", "_ZL9atomicMinPjj", "_ZL9atomicMaxPjj", "_ZL9atomicIncPjj",
-      "_ZL9atomicDecPjj", "_ZL10atomicExchPjj", "_ZL9atomicCASPjjj", "_ZL9atomicAndPjj", "_ZL8atomicOrPjj",
-      "_ZL9atomicXorPjj", "llvm.nvvm.atomic.load.inc .32.p0i32", "llvm.nvvm.atomic.load.dec.32.p0i32"
-}
+const std::set<llvm::StringRef> atomics{"_ZL9atomicAddPjj",
+                                        "_ZL9atomicSubPjj",
+                                        "_ZL9atomicMinPjj",
+                                        "_ZL9atomicMaxPjj",
+                                        "_ZL9atomicIncPjj",
+                                        "_ZL9atomicDecPjj",
+                                        "_ZL10atomicExchPjj",
+                                        "_ZL9atomicCASPjjj",
+                                        "_ZL9atomicAndPjj",
+                                        "_ZL8atomicOrPjj",
+                                        "_ZL9atomicXorPjj",
+                                        "llvm.nvvm.atomic.load.inc .32.p0i32",
+                                        "llvm.nvvm.atomic.load.dec.32.p0i32"};
 
 inline bool isAtomic(const llvm::StringRef& funcName) { return atomics.find(funcName) != atomics.end(); }
+
+// isMemcopy():
+//     llvm.memcpy.p0i8.p0i8.i64
 
 }  // namespace CudaModel
