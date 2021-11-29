@@ -45,18 +45,6 @@ limitations under the License.
 //         cudaCreateSurfaceObject
 //         cudaDestroySurfaceObject
 //
-//         atomicAdd
-//         atomicSub
-//         atomicExch
-//         atomicMin
-//         atomicMax
-//         atomicInc
-//         atomicDec
-//         atomicCAS
-//         atomicAnd
-//         atomicOr
-//         atomicXor
-//
 //         __all
 //         __any
 //         __ballot
@@ -97,5 +85,13 @@ inline bool isStreamBarrier(const llvm::StringRef& funcName) { return funcName.e
 
 inline bool isForkGrid(const llvm::StringRef& funcName) { return funcName.equals("cudaLaunch"); }
 inline bool isKernelLaunch(const llvm::StringRef& funcName) { return isForkGrid(funcName); }
+
+const std::set<llvm::StringRef> atomics {
+  "_ZL9atomicAddPjj", "_ZL9atomicSubPjj", "_ZL9atomicMinPjj", "_ZL9atomicMaxPjj", "_ZL9atomicIncPjj",
+      "_ZL9atomicDecPjj", "_ZL10atomicExchPjj", "_ZL9atomicCASPjjj", "_ZL9atomicAndPjj", "_ZL8atomicOrPjj",
+      "_ZL9atomicXorPjj", "llvm.nvvm.atomic.load.inc .32.p0i32", "llvm.nvvm.atomic.load.dec.32.p0i32"
+}
+
+inline bool isAtomic(const llvm::StringRef& funcName) { return atomics.find(funcName) != atomics.end(); }
 
 }  // namespace CudaModel
