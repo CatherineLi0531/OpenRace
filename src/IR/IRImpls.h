@@ -215,19 +215,34 @@ class CudaStreamFork : public ForkIR {};
 // Corresponds to kernel<<<>>>. Grids themselves have no commands, only that they hold block forks
 class CudaGridFork : public ForkIR {
   // TODO: URL
-
-  // KernelFunc(grid dimensionality (either int or "dim3" tuple), block dimensionality (either int or "dim3" tuple),
-  // shared memory???, stream mapping (int) )
   constexpr static unsigned int kernelFunctionOffset = 0;
 
   constexpr static unsigned int blockDimOffset = 0;
   constexpr static unsigned int threadDimOffset = 1;
-  constexpr static unsigned int streamMappingOffset = 2;
+  constexpr static unsigned int sharedMemoryOffset = 2;
+  constexpr static unsigned int streamMappingOffset = 3;
 
   const llvm::CallBase *inst;
 
+  bool isMultiBlock, isMultiWarp, isMultiThread;
+
  public:
-  explicit CudaGridFork(const llvm::CallBase *inst) : ForkIR(Type::CudaGridFork), inst(inst) {}
+  explicit CudaGridFork(const llvm::CallBase *inst) : ForkIR(Type::CudaGridFork), inst(inst) {
+    // TODO: get blockDim, threadDim and set the 3 booleans in this.
+    //    these values are not present in the cudaLaunch call, or either kernel definition
+    //    for now, assuming multiple blocks, multiple warps, and multiple threads
+
+    isMultiBlock = true;
+
+    /*
+    if (numThreads > 32) {
+      isMultiWarp = true;
+    }
+    */
+
+    isMultiWarp = true;
+    isMultiThread = true;
+  }
 
   [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
 
@@ -241,6 +256,10 @@ class CudaGridFork : public ForkIR {
 
     return inst->getArgOperand(kernelFunctionOffset)->stripPointerCasts();
   }
+
+  inline bool hasMultipleBlocks() { return isMultiBlock; }
+  inline bool hasMultipleWarps() { return isMultiWarp; }
+  inline bool hasMultipleThreads() { return isMultiThread; }
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static inline bool classof(const IR *e) { return e->type == Type::CudaGridFork; }

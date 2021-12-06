@@ -55,6 +55,9 @@ limitations under the License.
 
 namespace CudaModel {
 
+inline bool isCuda(const llvm::StringRef& funcName) {
+  return funcName.startswith("cuda") || funcName.startswith("_ZL9") || funcName.startswith("llvm.nvmm");
+}
 inline bool isSyncThreads(const llvm::StringRef& funcName) { return funcName.equals("llvm.nvvm.barrier0"); }
 inline bool isBlockBarrier(const llvm::StringRef& funcName) { return isSyncThreads(funcName); }
 
