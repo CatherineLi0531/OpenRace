@@ -15,6 +15,8 @@ limitations under the License.
 
 #include "IR/IR.h"
 
+#include <iostream> //TODO: TEMPORARY
+
 namespace race {
 
 // ==================================================================
@@ -181,7 +183,7 @@ class OpenMPTaskFork : public ForkIR {
 };
 
 class OpenMPForkTeams : public ForkIR {
-  // TODO: put link here
+  // https://github.com/llvm/llvm-project-staging/blob/cc926dc3a87af7023aa9b6c392347a0a8ed6949b/openmp/runtime/src/kmp_csupport.cpp#L392
   // @param loc  source location information
   // @param argc  total number of arguments in the ellipsis
   // @param microtask  pointer to callback routine consisting of outlined parallel
@@ -206,6 +208,27 @@ class OpenMPForkTeams : public ForkIR {
 
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static inline bool classof(const IR *e) { return e->type == Type::OpenMPForkTeams; }
+};
+
+// Corresponds to kernel<<<>>>. Grids themselves have no commands, only that they hold block forks
+class CudaGridFork : public ForkIR {
+  constexpr static unsigned int kernelFunctionOffset = 0;
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaGridFork(const llvm::CallBase *inst) : ForkIR(Type::CudaGridFork), inst(inst) {}
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return getThreadEntry(); } //TODO: I don't think this will work
+
+  [[nodiscard]] const llvm::Value *getThreadEntry() const override {
+    std::cout <<"THREAD ENTRY: " << inst->getArgOperand(kernelFunctionOffset)->stripPointerCasts()->getName().str()<< "\n";
+    return inst->getArgOperand(kernelFunctionOffset)->stripPointerCasts();
+  }
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static inline bool classof(const IR *e) { return e->type == Type::CudaGridFork; }
 };
 
 // ==================================================================
@@ -274,6 +297,8 @@ class OpenMPJoinTeams : public JoinIR {
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static inline bool classof(const IR *e) { return e->type == Type::OpenMPJoinTeams; }
 };
+
+// TODO: CREATE CUDA JOINS. All point to GRID fork or "fake" forks
 
 // ==================================================================
 // ================== LockIR Implementations ========================
@@ -394,6 +419,55 @@ class OpenMPBarrier : public BarrierIR {
 
   [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
 };
+
+// Corresponds to cudaDeviceSynchronize()
+class CudaDeviceBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaDeviceBarrier(const llvm::CallBase *call) : BarrierIR(Type::CudaDeviceBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+// Corresponds to cudaStreamSynchronize()
+class CudaStreamBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaStreamBarrier(const llvm::CallBase *call) : BarrierIR(Type::CudaStreamBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+// Corresponds to __syncthreads()
+class CudaBlockBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaBlockBarrier(const llvm::CallBase *call) : BarrierIR(Type::CudaBlockBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+/** CUDA 9+
+
+// Corresponds to __syncwarp()
+class CudaWarpBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaWarpBarrier(const llvm::CallBase *call) : BarrierIR(Type::CudaWarpBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+};
+
+// Corresponds to cg::synchronize() / g.sync()
+class CudaCooperativeGroupBarrier : public BarrierIR {
+  const llvm::CallBase *inst;
+
+ public:
+  explicit CudaCooperativeGroupBarrier(const llvm::CallBase *call)
+      : BarrierIR(Type::CudaCooperativeGroupBarrier), inst(call) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return inst; }
+}
+*/
 
 // =================================================================
 // ================= Other Implementations =========================

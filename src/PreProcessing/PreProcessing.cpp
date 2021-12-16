@@ -31,6 +31,7 @@ limitations under the License.
 #include "LanguageModel/OpenMP.h"
 #include "PreProcessing/Passes/CanonicalizeGEPPass.h"
 #include "PreProcessing/Passes/DuplicateOpenMPForks.h"
+#include "PreProcessing/Passes/DuplicateCudaForks.h"
 #include "PreProcessing/Passes/InsertFakeCallForGuardBlocks.h"
 #include "PreProcessing/Passes/LoweringMemCpyPass.h"
 #include "PreProcessing/Passes/OMPConstantPropPass.h"
@@ -107,5 +108,6 @@ void preprocess(llvm::Module &module) {
   mpm.run(module, mam);
 
   duplicateOpenMPForks(module);
+  duplicateCudaForks(module);
   insertFakeCallForGuardBlocks(module);
 }

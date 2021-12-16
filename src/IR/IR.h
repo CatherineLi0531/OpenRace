@@ -34,6 +34,12 @@ class IR {
     OpenMPFork,
     OpenMPTaskFork,
     OpenMPForkTeams,
+    CudaStreamFork,
+    CudaGridFork,
+    CudaBlockFork,
+    CudaWarpFork,
+    CudaThreadFork,
+    // CudaCooperativeGroupFork, // Cuda 9+
     END_Fork,
     Join,
     PthreadJoin,
@@ -57,6 +63,11 @@ class IR {
     END_Unlock,
     Barrier,
     OpenMPBarrier,
+    CudaDeviceBarrier,
+    CudaStreamBarrier,
+    CudaBlockBarrier,
+    // CudaWarpBarrier, // CUDA 9+
+    // CudaCooperativeGroupBarrier,  // CUDA 9+
     END_Barrier,
     Call,
     OpenMPForInit,

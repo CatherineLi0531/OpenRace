@@ -12,6 +12,7 @@ limitations under the License.
 #include "LanguageModel/RaceModel.h"
 
 #include "IR/IRImpls.h"
+#include "LanguageModel/Cuda.h"
 #include "LanguageModel/OpenMP.h"
 #include "LanguageModel/pthread.h"
 
@@ -48,6 +49,10 @@ InterceptResult RaceModel::interceptFunction(const ctx * /* callerCtx */, const 
     return {task.getThreadEntry(), InterceptResult::Option::EXPAND_BODY};
   }
 
+  if (CudaModel::isKernelLaunch(funcName)) {
+    race::CudaGridFork grid(llvm::cast<CallBase>(callsite));
+    return {grid.getThreadEntry(), InterceptResult::Option::EXPAND_BODY};
+  }
   // By default always try to expand the function body
   return {F, InterceptResult::Option::EXPAND_BODY};
 }
@@ -101,7 +106,7 @@ bool RaceModel::interceptCallSite(const CtxFunction<ctx> *caller, const CtxFunct
   }
 
   if (OpenMPModel::isTask(funcName)) {
-    // Link 3rd arg of __kmpc_omp_task (kmp_tsking.cpp:1684) with task functions 2nd
+    // Link 3rd arg of __kmpc_omp_task (kmp_tasking.cpp:1684) with task functions 2nd
     auto calleeArg = callee->getFunction()->arg_begin();
     std::advance(calleeArg, 1);
     PtrNode *formal = this->getPtrNode(callee->getContext(), calleeArg);
@@ -197,13 +202,14 @@ bool RaceModel::isHeapAllocAPI(const llvm::Function *F, const llvm::Instruction 
   }
   auto const name = F->getName();
   return name.equals("malloc") || name.equals("calloc") || name.equals("_Zname") || name.equals("_Znwm") ||
-         name.equals("__kmpc_omp_task_alloc");
+         name.equals("__kmpc_omp_task_alloc") || name.equals("cudaMalloc");
 }
 
 namespace {
 // TODO: better way of handling these
-const std::set<llvm::StringRef> origins{"pthread_create", "__kmpc_fork_call", "__kmpc_omp_task",
-                                        "__kmpc_omp_task_alloc", "__kmpc_fork_teams"};
+const std::set<llvm::StringRef> origins{"pthread_create",    "__kmpc_fork_call",
+                                        "__kmpc_omp_task",   "__kmpc_omp_task_alloc",
+                                        "__kmpc_fork_teams", "cudaLaunch"}; 
 }  // namespace
 
 bool RaceModel::isInvokingAnOrigin(const originCtx * /* prevCtx */, const llvm::Instruction *I) {
