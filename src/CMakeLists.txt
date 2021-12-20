@@ -11,6 +11,7 @@ set(pta-lib-sources
     PreProcessing/Passes/OMPConstantPropPass.cpp
     PreProcessing/Passes/RemoveExceptionHandlerPass.cpp
     PreProcessing/Passes/DuplicateOpenMPForks.cpp
+    PreProcessing/Passes/InsertImplicitCudaForks.cpp
     PreProcessing/Passes/InsertFakeCallForGuardBlocks.cpp
     PointerAnalysis/Models/MemoryModel/Canonicalizer.cpp
     PointerAnalysis/Models/MemoryModel/DefaultHeapModel.cpp
