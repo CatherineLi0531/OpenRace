@@ -31,10 +31,13 @@ limitations under the License.
 #include "LanguageModel/OpenMP.h"
 #include "PreProcessing/Passes/CanonicalizeGEPPass.h"
 #include "PreProcessing/Passes/DuplicateOpenMPForks.h"
+#include "PreProcessing/Passes/InsertImplicitCudaForks.h"
 #include "PreProcessing/Passes/InsertFakeCallForGuardBlocks.h"
 #include "PreProcessing/Passes/LoweringMemCpyPass.h"
 #include "PreProcessing/Passes/OMPConstantPropPass.h"
 #include "PreProcessing/Passes/RemoveExceptionHandlerPass.h"
+
+#include <iostream>
 
 namespace {
 void markOMPDebugAlwaysInline(llvm::Module &module) {
@@ -46,6 +49,23 @@ void markOMPDebugAlwaysInline(llvm::Module &module) {
 }
 }  // namespace
 
+void printModule(llvm::Module &module) {
+  std::cout<< "MODULE:\n";
+  for (auto &function : module.getFunctionList()) {
+    for (auto &basicblock : function.getBasicBlockList()) {
+      for (auto &inst : basicblock.getInstList()) {
+        auto call = llvm::dyn_cast<llvm::CallBase>(&inst);
+        if (!call || !call->getCalledFunction() || !call->getCalledFunction()->hasName()) continue;
+
+        auto const funcName = call->getCalledFunction()->getName();
+
+        std::cout << funcName.str()<<"\n";
+      
+      }
+    }
+  }
+  std::cout<<"ENDOFMODULE\n";
+}
 void preprocess(llvm::Module &module) {
   // inline debug omp to make inter-procedural constant propagation easier
   markOMPDebugAlwaysInline(module);
@@ -108,4 +128,8 @@ void preprocess(llvm::Module &module) {
 
   duplicateOpenMPForks(module);
   insertFakeCallForGuardBlocks(module);
+
+  insertImplicitCudaForks(module);
+
+  printModule(module);
 }

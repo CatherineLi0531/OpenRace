@@ -46,6 +46,11 @@ class IR {
     OpenMPJoin,
     OpenMPTaskJoin,
     OpenMPJoinTeams,
+    CudaJoinGrids,
+    CudaJoinBlocks,
+    CudaJoinWarps,
+    CudaJoinThreads,
+    // CudaJoinCooperativeGroups, // Cuda 9+
     END_Join,
     Lock,
     PthreadMutexLock,

@@ -222,6 +222,9 @@ class CudaGridFork : public ForkIR {
   constexpr static unsigned int sharedMemoryOffset = 2;
   constexpr static unsigned int streamMappingOffset = 3;
 
+  // std::shared_ptr<const CudaBlockFork> block1;
+  // std::shared_ptr<const CudaBlockFork> block2;
+
   const llvm::CallBase *inst;
 
   bool isMultiBlock, isMultiWarp, isMultiThread;
@@ -265,17 +268,185 @@ class CudaGridFork : public ForkIR {
   static inline bool classof(const IR *e) { return e->type == Type::CudaGridFork; }
 };
 
-// Implied by grid fork, these match up to the first argument to grid forks. Blocks have no commands, only that they
-// hold warp forks
-class CudaBlockFork : public ForkIR {};
+class CudaBlockFork : public ForkIR {
+  // std::shared_ptr<const CudaWarpFork> warp1;
+  // std::shared_ptr<const CudaWarpFork> warp2;
 
-// Implied by grid fork, these match up to ceil(the second argument to grid forks / 32). Warps have no commands, only
-// that they hold thread forks
-class CudaWarpFork : public ForkIR {};
+  std::shared_ptr<const CudaGridFork> grid;
+  llvm::Value *handle;  // make sure this is unique
+  llvm::Value *entry;   // created by us because does not exist in code
 
-// Implied by grid fork, these should be done as two per warp
-class CudaThreadFork : public ForkIR {};
+  //  name (unique id for grid)
+  //  name1 (id block 1)
+  //    name11 (id warp 1)
+  //      name11
+  //      name12
+  //    name12
+  //  name2 (id for block 2)
 
+ public:
+  CudaBlockFork(std::shared_ptr<const CudaGridFork> parentGrid, llvm::Value *handle, llvm::Value *entry)
+      : ForkIR(Type::CudaBlockFork), grid(parentGrid), handle(handle), entry(entry) {}
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return grid->getInst(); }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return handle; }
+
+  [[nodiscard]] const llvm::Value *getThreadEntry() const override { return entry; }
+};
+
+/*
+
+For now, assume all memory is shared and try to verify addrspaces at the end (not during PTA).
+
+CudaRuntime
+
+std::map from CudaGridFork-> struct {
+  2 blocks
+  4 Warps
+  8 Threads (Identical traces)
+   -> preprocessing to trick PTA into creating contexts
+   -> insert 8 dummy forks
+   -> (optional) insert 8 dummy joins
+}
+
+
+=== Preprocessing
+CudaGridFork -> insert 8 dummy forks all with entry of cuda grid
+dummy_cuda_thread("dummy_thread_1", @the_kernel_entry_func)
+
+=== IRBuilder
+when see CudaGridFork, grab the next 8 dummy forks std::array<llvm::Call, 8>;
+Add CudaThreadForkIR to summary for those 8 dummy forks
+
+Summary Example
+....
+call cudaGridFork
+call dummycudaThreadfork() x8 [inserted during preprocessing]
+
+=== Runtime
+intercept preVisit -> CudaGridFork
+  1. Note that this was most recent encountered
+  2. Tell trace builder to skip
+
+Next trace builder will see 8 dummy forks for threads
+Save gridFork -> list of dummy Forks
+Intercept postFork - count how many have been traversed (I am planning to make this an argument in the pre-processing, then read it out?)
+After last (8th) dummy thread trace is built, link everything and insert joins
+  1. Create trace for grid fork
+  2. Create trace for 2 blocks, link to grid fork
+  3. Create trace for 4 warps, link to blocks
+  4. Traces for threads, exist and have been saved, link to warps vvv
+
+Cleanup the "main thread" Trace with GridFork,
+  1. Remove those dummy thread forks
+      a. ThreadTrace.h
+      b. Update spawnSite of each dummy thread to be the warp
+      c. Move event and childthread pointers onto the warps and off of main thread
+
+
+
+
+End Result Trace
+
+--main--
+events: cudaFork
+childThreads: CudaGrid
+
+
+--Grid-- x1
+events: cudaBlockFork x2
+spawnsite: main
+
+--Block-- x2
+childThreads: cudaWarp x4
+spawnsite: cudaGridFork
+
+--Warp-- x4
+events: cudaWarpFork x2
+childThreads: cudaWarp x2
+spawnsite: block
+
+-- Thread -- x8
+events: (build by threadbuilder directly)
+childThreads: None
+spawnsite: UPDATE to point to the warps
+
+
+
+
+
+
+
+foo(int *a) {
+   *a = soemthign;
+}
+
+Thread1 (ctx1)
+  write to a
+
+Thread2 (ctx1)
+  write to a
+
+
+pthread_create(t1, NULL, entry, NULL);
+
+handle -> t1
+entry -> entry
+
+
+pthread_join(t1)
+
+handle -> t1
+
+
+
+kmpc_fork(@omp_entry1, ...)
+kmpc_fake_join(@omp_entry1)
+
+*/
+
+class CudaWarpFork : public ForkIR {
+  // So that we know about children forks
+  // std::shared_ptr<const CudaThreadFork> thread1;
+  // std::shared_ptr<const CudaThreadFork> thread2;
+
+  // so we can get parent inst
+  std::shared_ptr<const CudaBlockFork> block;
+
+  llvm::Value *handle;  // make sure this is unique
+  llvm::Value *entry;   // created by us because does not exist in code
+
+ public:
+  CudaWarpFork(std::shared_ptr<const CudaBlockFork> parentBlock, llvm::Value *handle, llvm::Value *entry)
+      : ForkIR(Type::CudaWarpFork), block(parentBlock), handle(handle), entry(entry) {}
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return block->getInst(); }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return handle; }
+
+  [[nodiscard]] const llvm::Value *getThreadEntry() const override { return entry; }
+};
+
+class CudaThreadFork : public ForkIR {
+  // so we can get parent inst
+  std::shared_ptr<const CudaWarpFork> warp;
+
+  llvm::Value *handle;  // make sure this is unique
+  llvm::Value *entry;   // created by us because does not exist in code
+
+  bool isLastThreadOfGrid = false;
+ public:
+  CudaThreadFork(std::shared_ptr<const CudaWarpFork> parentThread, llvm::Value *handle, llvm::Value *entry, bool isLast)
+      : ForkIR(Type::CudaThreadFork), warp(parentThread), handle(handle), entry(entry), isLastThreadOfGrid(isLast) {}
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return warp->getInst(); }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return handle; }
+
+  [[nodiscard]] const llvm::Value *getThreadEntry() const override { return entry; }
+
+  bool isLastThread() { return isLastThreadOfGrid; }
+};
 /** Cuda 9+
 
 // Corresponds to cg::partition
@@ -348,6 +519,67 @@ class OpenMPJoinTeams : public JoinIR {
   // Used for llvm style RTTI (isa, dyn_cast, etc.)
   static inline bool classof(const IR *e) { return e->type == Type::OpenMPJoinTeams; }
 };
+
+class CudaJoinGrids : public JoinIR {
+  std::shared_ptr<CudaGridFork> fork;
+
+  public:
+  explicit CudaJoinGrids(const std::shared_ptr<CudaGridFork> fork) : JoinIR(Type::CudaJoinGrids), fork(fork) {}
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return fork->getInst(); }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return fork->getThreadHandle(); }
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static inline bool classof(const IR *e) { return e->type == Type::CudaJoinGrids; }
+};
+
+class CudaJoinBlocks : public JoinIR {
+  std::shared_ptr<CudaGridFork> fork; //These could point to CudaBlockFork,WarpFork,etc?
+
+  public:
+  explicit CudaJoinBlocks(const std::shared_ptr<CudaGridFork> fork) : JoinIR(Type::CudaJoinBlocks), fork(fork) {}
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return fork->getInst(); }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return fork->getThreadHandle(); }
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static inline bool classof(const IR *e) { return e->type == Type::CudaJoinBlocks; }
+};
+
+class CudaJoinWarps : public JoinIR {
+  std::shared_ptr<CudaGridFork> fork;
+
+  public:
+  explicit CudaJoinWarps(const std::shared_ptr<CudaGridFork> fork) : JoinIR(Type::CudaJoinWarps), fork(fork) {}
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return fork->getInst(); }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return fork->getThreadHandle(); }
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static inline bool classof(const IR *e) { return e->type == Type::CudaJoinWarps; }
+};
+
+class CudaJoinThreads : public JoinIR {
+  std::shared_ptr<CudaGridFork> fork;
+
+  public:
+  explicit CudaJoinThreads(const std::shared_ptr<CudaGridFork> fork) : JoinIR(Type::CudaJoinThreads), fork(fork) {}
+
+  [[nodiscard]] inline const llvm::CallBase *getInst() const override { return fork->getInst(); }
+
+  [[nodiscard]] const llvm::Value *getThreadHandle() const override { return fork->getThreadHandle(); }
+
+  // Used for llvm style RTTI (isa, dyn_cast, etc.)
+  static inline bool classof(const IR *e) { return e->type == Type::CudaJoinThreads; }
+};
+
+/** Cuda 9+
+
+class CudaJoinCooperativeGroups : public ForkIR {};
+*/
 
 // ==================================================================
 // ================== LockIR Implementations ========================

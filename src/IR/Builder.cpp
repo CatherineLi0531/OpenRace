@@ -84,6 +84,10 @@ void summarizePthreadFunction(FunctionSummary &summary, llvm::BasicBlock::const_
     summary.push_back(std::make_shared<PthreadSpinLock>(callInst));
   } else if (PthreadModel::isPthreadSpinUnlock(funcName)) {
     summary.push_back(std::make_shared<PthreadSpinUnlock>(callInst));
+  } else {
+    llvm::errs() << "Unhandled Pthread call: " << funcName << "\n";
+    //assert(false && "Unhandled Pthread Call!");
+    summary.push_back(std::make_shared<CallIR>(callInst));
   }
 }
 void summarizeOpenMPFunction(FunctionSummary &summary, llvm::BasicBlock::const_iterator &it, llvm::StringRef &funcName,
@@ -189,32 +193,23 @@ void summarizeCudaFunction(FunctionSummary &summary, llvm::BasicBlock::const_ite
                            const llvm::CallBase *callInst) {
   if (CudaModel::isForkGrid(funcName)) {
     auto gridFork = std::make_shared<CudaGridFork>(callInst);
+    std::vector<llvm::CallBase> threadForks;
+    
+    const llvm::CallBase* call = callInst;
+    for(int i = 0 ; i < 8; i ++){
+      call = llvm::dyn_cast<llvm::CallBase>(call->getNext());
+      threadForks.push_back(call);
+    }
+  }
     summary.push_back(gridFork);
-
-    // Kernel invocation implies blocks, warps, & threads
-
-    summary.push_back(std::make_shared<CudaBlockFork>(callInst));
-    if (gridFork->hasMultipleBlocks()) {
-      summary.push_back(std::make_shared<CudaBlockFork>(callInst));
-    }
-
-    summary.push_back(std::make_shared<CudaWarpFork>(callInst));
-    if (gridFork->hasMultipleWarps()) {
-      summary.push_back(std::make_shared<CudaWarpFork>(callInst));
-    }
-
-    summary.push_back(std::make_shared<CudaThreadFork>(callInst));
-    if (gridFork->hasMultipleThreads()) {
-      summary.push_back(std::make_shared<CudaThreadFork>(callInst));
-    }
-
   } else if (CudaModel::isSyncThreads(funcName)) {
     summary.push_back(std::make_shared<CudaBlockBarrier>(callInst));
   } else if (CudaModel::isDeviceSynchronize(funcName)) {
     summary.push_back(std::make_shared<CudaDeviceBarrier>(callInst));
   } else {
     llvm::errs() << "Unhandled CUDA call: " << funcName << "\n";
-    assert(false && "Unhandled CUDA Call!");
+    //assert(false && "Unhandled CUDA Call!");
+    summary.push_back(std::make_shared<CallIR>(callInst));
   }
 }
 std::shared_ptr<const FunctionSummary> generateFunctionSummary(const llvm::Function &func) {
@@ -264,6 +259,8 @@ std::shared_ptr<const FunctionSummary> generateFunctionSummary(const llvm::Funct
           summarizeCudaFunction(summary, it, funcName, callInst);
         } else if (isPrintf(funcName)) {
           // TODO: model as read?
+        } else {
+          summary.push_back(std::make_shared<CallIR>(callInst));
         }
       }
     }
