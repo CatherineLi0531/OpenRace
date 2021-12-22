@@ -17,4 +17,4 @@ limitations under the License.
 
 using namespace llvm;
 
-const std::set<StringRef> pta::DefaultExtFunctions::THREAD_CREATIONS{"pthread_create"};
+const std::set<StringRef> pta::DefaultExtFunctions::THREAD_CREATIONS{"pthread_create", "cudaLaunch"};

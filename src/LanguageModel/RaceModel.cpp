@@ -51,7 +51,8 @@ InterceptResult RaceModel::interceptFunction(const ctx * /* callerCtx */, const 
 
   if (CudaModel::isKernelLaunch(funcName)) {
     race::CudaGridFork grid(llvm::cast<CallBase>(callsite));
-    return {grid.getThreadEntry(), InterceptResult::Option::EXPAND_BODY};
+    auto callback = grid.getThreadEntry()->stripPointerCasts();
+    return {callback, InterceptResult::Option::EXPAND_BODY};
   }
   // By default always try to expand the function body
   return {F, InterceptResult::Option::EXPAND_BODY};

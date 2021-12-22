@@ -86,7 +86,7 @@ void summarizePthreadFunction(FunctionSummary &summary, llvm::BasicBlock::const_
     summary.push_back(std::make_shared<PthreadSpinUnlock>(callInst));
   } else {
     llvm::errs() << "Unhandled Pthread call: " << funcName << "\n";
-    assert(false && "Unhandled Pthread Call!");
+    // assert(false && "Unhandled Pthread Call!");
     summary.push_back(std::make_shared<CallIR>(callInst));
   }
 }
