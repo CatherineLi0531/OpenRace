@@ -23,7 +23,7 @@ limitations under the License.
 
 namespace {
 unsigned int stringToUnsigned(llvm::StringRef s) {
-  std::istringstream read(s);
+  std::istringstream read(s.str());
   unsigned int val = 0;
   read >> val;
   return val;

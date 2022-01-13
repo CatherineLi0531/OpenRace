@@ -4,10 +4,10 @@
 FLAGS=-g -O1 -mllvm -disable-llvm-optzns -fno-discard-value-names -fopenmp -S -emit-llvm
 
 # Check that we are compiling with clang 10.0.1
-ifeq ("", "$(shell $(CC) -dumpversion | grep -E '10.0.1')")
+ifeq ("", "$(shell $(CC) -dumpversion | grep -E '12.0.1')")
 $(error "clang 10.0.1 is required to build the test files")
 endif
-ifeq ("", "$(shell $(CXX) -dumpversion | grep -E '10.0.1')")
+ifeq ("", "$(shell $(CXX) -dumpversion | grep -E '12.0.1')")
 $(error "clang 10.0.1 is required to build the test files")
 endif
 
