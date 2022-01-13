@@ -1,6 +1,10 @@
 # manual build
 build/
 
+src/CMakeFiles
+src/CMakeFiles/*
+src/cmake_install.cmake
+
 # VSCode
 .vscode/
 

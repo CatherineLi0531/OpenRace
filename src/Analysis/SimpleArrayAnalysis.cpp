@@ -10,6 +10,8 @@ limitations under the License.
 ==============================================================================*/
 
 #include "Analysis/SimpleArrayAnalysis.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
+
 
 #include <utility>
 

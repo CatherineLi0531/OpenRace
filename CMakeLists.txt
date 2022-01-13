@@ -13,6 +13,7 @@ project(OpenRace
 # As a shortcut you can install LLVM 10.0.1 to a location using CMAKE_INSTALL_PREFIX
 # and then set LLVM_INSTALL to that directory
 # All the other LLVM related vars will be automatically set
+
 if (DEFINED LLVM_INSTALL)
     message(STATUS "LLVM_INSTALL: ${LLVM_INSTALL}")
     
@@ -47,7 +48,7 @@ conan_cmake_run(REQUIRES catch2/2.13.4
                 CMAKE_TARGETS)
 
 list(APPEND CMAKE_PREFIX_PATH ${LLVM_DIR})
-find_package(LLVM 10.0.1 REQUIRED CONFIG)
+find_package(LLVM 12.0.1 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 if(NOT DEFINED ENABLE_WARNING)

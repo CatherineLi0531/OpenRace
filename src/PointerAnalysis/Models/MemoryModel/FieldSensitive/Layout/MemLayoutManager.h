@@ -71,9 +71,9 @@ class MemLayoutManager {
         // forward the physical offset
         pOffset += typeAllocSize;
         break;
-      // case llvm::Type::FixedVectorTyID:
-      // case llvm::Type::ScalableVectorTyID: {
-      case llvm::Type::VectorTyID: {
+      case llvm::Type::FixedVectorTyID:
+      case llvm::Type::ScalableVectorTyID: {
+      //case llvm::Type::VectorTyID: {
         // simply skip it
         LOG_TRACE("Unhandled Type. type={}", *elementType);
       }

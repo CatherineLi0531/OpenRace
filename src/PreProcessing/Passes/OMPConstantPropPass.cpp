@@ -22,6 +22,8 @@ limitations under the License.
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/AbstractCallSite.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/DebugCounter.h"
@@ -285,7 +287,7 @@ bool PropagateConstantsIntoArguments(Function &F, const DominatorTree &DT, const
         AbstractCallSite ACS(&U);
         auto V = ACS.getCallArgOperand(i);
 
-        auto SI = findUniqueDominatedStoreDef(V, ACS.getCallSite().getInstruction(), DT);
+        auto SI = findUniqueDominatedStoreDef(V, ACS.getInstruction(), DT);
         if (SI == nullptr) break;
 
         if (auto defVal = dyn_cast<Constant>(SI->getValueOperand())) {

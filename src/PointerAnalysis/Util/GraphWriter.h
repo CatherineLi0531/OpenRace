@@ -110,7 +110,7 @@ class GraphWriter {
       if (!isNodeHidden(Node)) writeNode(Node);
   }
 
-  bool isNodeHidden(NodeRef Node) { return DTraits.isNodeHidden(Node); }
+  bool isNodeHidden(NodeRef Node) { return DTraits.isNodeHidden(Node,G); }
 
   void writeNode(NodeRef Node) {
     std::string NodeAttributes = DTraits.getNodeAttributes(Node, G);
@@ -175,9 +175,9 @@ class GraphWriter {
     edge_iterator EE = GTraits::child_edge_end(Node);
     // bz: seems like the 2nd param of writeEdge will not exceed max int
     for (int i = 0; EI != EE && i != 64; ++EI, ++i)
-      if (!DTraits.isNodeHidden(GTraits::edge_dest(*EI))) writeEdge(Node, i, EI);
+      if (!isNodeHidden(GTraits::edge_dest(*EI))) writeEdge(Node, i, EI);
     for (; EI != EE; ++EI)
-      if (!DTraits.isNodeHidden(GTraits::edge_dest(*EI))) writeEdge(Node, 64, EI);
+      if (!isNodeHidden(GTraits::edge_dest(*EI))) writeEdge(Node, 64, EI);
   }
 
   void writeEdge(NodeRef Node, int edgeidx, edge_iterator EI) {

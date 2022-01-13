@@ -52,9 +52,9 @@ void lowerMemCpyForType(Type *type, Value *src, Value *dst, SmallVector<Value *,
       builder.CreateStore(srcLoad, dstGEP, false);
       break;
     }
-    // case llvm::Type::FixedVectorTyID:
-    // case llvm::Type::ScalableVectorTyID: {
-    case llvm::Type::VectorTyID: {
+     case llvm::Type::FixedVectorTyID:
+     case llvm::Type::ScalableVectorTyID: {
+    //case llvm::Type::VectorTyID: {
       // simply skip vector type
       break;
     }

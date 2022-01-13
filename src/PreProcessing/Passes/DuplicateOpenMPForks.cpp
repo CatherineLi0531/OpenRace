@@ -46,14 +46,15 @@ void duplicateForkCall(llvm::CallBase *ompFork) {
   auto ty = arg_list.front()->getType()->getPointerElementType();
   arg_list[0] = build.CreateAlloca(ty, nullptr, "cr_duplicateOmpForkHandle");
 
+  auto fnType = ompFork->getFunctionType ();
   auto callee = ompFork->getCalledOperand();
 
   if (llvm::isa<llvm::CallInst>(ompFork)) {
-    auto inst = build.CreateCall(callee, {arg_list});
+    auto inst = build.CreateCall(fnType, callee, {arg_list});
     assert(inst);
   } else {
     auto II = llvm::cast<llvm::InvokeInst>(ompFork);
-    auto inst = build.CreateInvoke(callee, II->getNormalDest(), II->getUnwindDest(), {arg_list});
+    auto inst = build.CreateInvoke(fnType, callee, II->getNormalDest(), II->getUnwindDest(), {arg_list});
     assert(inst);
   }
 }

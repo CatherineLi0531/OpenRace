@@ -159,9 +159,9 @@ class FSMemModel {
         }
         return allocStructArrayObj<PT>(C, V, T, type, DL);
       }
-        // case llvm::Type::FixedVectorTyID:
-        // case llvm::Type::ScalableVectorTyID: {
-      case llvm::Type::VectorTyID: {
+      case llvm::Type::FixedVectorTyID:
+      case llvm::Type::ScalableVectorTyID: {
+      //case llvm::Type::VectorTyID: {
         LOG_DEBUG("Vector Type not handled. type={}", *V);
         block = this->allocMemBlock<FIMemBlock<ctx>>(C, V, T);
         break;
