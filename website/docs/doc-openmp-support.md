@@ -33,24 +33,24 @@ When offloaded to a GPU, some OpenMP synchronization features cannot prevent dat
 
 ### OpenMP tasks
 
-Only the simplest use cases of task is supported so far. 
-Task creation and task completion either through barriers or taskwait have been modeled.
+Only the simplest use cases of tasks are supported so far. 
+Task creation and task completion, either through barriers or taskwait, have been modeled.
 
-Complex usage (e.g. using taskwait or barriers to synchronize groups of nested tasks) is not supported yet.
+Complex usage (e.g., using taskwait or barriers to synchronize groups of nested tasks) is not supported yet.
 
-OpenMP tasks also include a number of related features like taskloops, taskgroup, task depend which have yet to be supported in OpenRace.
+OpenMP tasks also include a number of related features like taskloops, taskgroups, task depend, which have yet to be supported in OpenRace.
 
-The tool may report false positives in cases where complex synchronizations with tasks are used, and false negatives when unsupported task related features are used.
+The tool may report false positives in cases where complex synchronizations with tasks are used, and false negatives when unsupported task-related features are used.
 
 ### SIMD
 
-The `simd` directive can be used on its own or in combination with some specific OpenMP features (e.g. `parallel for simd`, `taskloop simd`, and more).
+The `simd` directive can be used on its own or in combination with some specific OpenMP features (e.g., `parallel for simd`, `taskloop simd`, and more).
 
 Any usage of `simd` is not supported by OpenRace. Any races present in SIMD code will likely be missed.
 
 ### Ordered/Depend
 
-The `depend` clause can be combined with various OpenMP features to describe a ordering between different tasks.
+The `depend` clause can be combined with various OpenMP features to describe an ordering between different tasks.
 
 OpenRace has no support for `depend` and the described orderings will not be modeled by the tool.
 
@@ -58,7 +58,7 @@ This will likely lead to false positives in code that uses the `depend` clause.
 
 ### Array Index Analysis
 
-Array Index Analysis is used to determine if any array accesses within a parallel loop may overlap
+Array Index Analysis is used to determine if any array accesses within a parallel loop may overlap.
 
 OpenRace currently uses an intra-procedural array index analysis based on LLVM's Scalar Evolution.
 
@@ -78,7 +78,7 @@ for (int i = 0; i < N; i++) {
 
 The array index analysis used by OpenRace can detect this race, as all array accesses are made directly inside the parallel loop.
 
-However, if same code is rewritten such that the accesses happen within a function call, OpenRace's array index analysis is unable to detect the race.
+However, if the same code is rewritten such that accesses happen within a function call, OpenRace's array index analysis is unable to detect the race.
 
 ```c
 int read (int *array, int idx)          { return array[idx]; }
