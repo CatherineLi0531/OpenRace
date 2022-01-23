@@ -9,7 +9,7 @@ There are two cases to consider when adding support for a new feature.
 
 If the "logical operation" performed by the features is already implemented, adding support is easy. If not, adding support is slightly more complex.
 
-The list of implemented operations can be seen from `StmtInfo::Type` in `IR/IR.h`. These are the logical operations currently implented. As an examnple, `Fork` spawns a new thread and `Lock` acquires a standard pthread style lock.
+The list of implemented operations can be seen from `StmtInfo::Type` in `IR/IR.h`. These are the logical operations currently being implemented. As an example, `Fork` spawns a new thread and `Lock` acquires a standard pthread-style lock.
 
 If the new feature behaves the same as an existing `StmtInfo::Type`, you only need to add a new recognizer at the IR level.
 
@@ -17,7 +17,7 @@ If you need to add a new operation to `StmtInfo::Type`, you need to write a reco
 
 ### Adding an IRRecognizer
 
-In `IR/Builder.cpp` the `generateRaceFunction` traverses LLVM IR and produces a `RaceFunction` containing only the loigcal operations we care about for race detection.
+In `IR/Builder.cpp` the `generateRaceFunction` traverses LLVM IR and produces a `RaceFunction` containing only the logical operations we care about for race detection.
 
 Two things need to be done to add a new recognizer:
  1. Add a new Impl class to `IR/IRImpls.h`
