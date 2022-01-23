@@ -17,7 +17,7 @@ interact with each other to compute the final result.
 
 ![PTA-arch](/img/PTA-Overview.svg)
 
-These components communicated with each other through a set of pre-defined APIs in 
+These components communicate with each other through a set of predefined APIs in 
 `MemModelTrait` as well as in `LangModelTrait`.
 At high level, 
 **Language Model** abstracts the target program into the *constraint graph*, 
@@ -25,7 +25,7 @@ the pointer analysis framework offers the flexibility for user-defined language 
 intercept any function call in the program and handle it differently; 
 **Memory Model** handles the creation of the static objects, different memory models handles
 object creation differently. E.g., Field-Insensitive Memory Model (`FIMemModel.h`) simply
-creates one object node for the object while Field-Sensitive Memory Model (`FSMemModel.h`)
+creates one object node for the object, while Field-Sensitive Memory Model (`FSMemModel.h`)
 creates one object node for each field of the object.
 Finally, **Solver** takes the constraint graph as the input and computes the final result.
 
@@ -42,11 +42,11 @@ enum class Constraints : std::uint8_t {
 + load edge: `if ptr1 = *ptr2;, then ptr2 --load--> ptr1` (ptr2 is loaded into ptr1).
 + store edge: `if *ptr1 = ptr2;, then ptr2 --store--> ptr1` (ptr2 is stored into ptr1).
 + copy edge: `if ptr1 = ptr2;, then ptr2 --copy--> ptr1` (ptr2 is copied to ptr1).
-+ addr_of edge: `if ptr1 = &ptr2; , then ptr2--addr_of--> ptr1` (ptr1 takes the address of ptr2)
++ addr_of edge: `if ptr1 = &ptr2; , then ptr2--addr_of--> ptr1` (ptr1 takes the address of ptr2).
 + offset edge: `if ptr1 = ptr2->f;, then ptr2--offset-->ptr1` (ptr1 add a offset to ptr2).
 
 2. **Memory Model**: Memory Model models the objects allocated in the program. 
-For example, it computes the size of each object, the memory layout of each object and it creates object nodes in the Constraint Graph.  
+For example, it computes the size of each object, the memory layout of each object, and it creates object nodes in the Constraint Graph.  
 Currently, we have two different memory models: 
 
 + *Field-insensitive memory model*: Field-insensitive memory model is a simple implementation of the memory model. It is relatively fast but also inaccurate. The field-insensitive memory model does not distinguish different fields of the object. For the following code snippet:
@@ -67,13 +67,13 @@ ALIAS(ptr1, ptr2) == true
 
 + *Field-sensitive memory model*: Field-sensitive memory model (still in process) overcomes the limitations of the field-insensitive memory model. It distinguishes different fields of the same object so that the ptr1 and ptr2 in the above example are not considered as aliases. It computes the memory layout (the offset of each field)  and provides APIs to index into the complicated object to access the right fields.
 
-3. **Andersen Solver**: After the language model builds the constraint graph and memory model models the object, the pointer analysis uses the solver to computes the points-to set of the pointer. The detailed description of the algorithm can be found via http://compilers.cs.ucla.edu/fernando/publications/papers/CGO09.pdf.
+3. **Andersen Solver**: After the language model builds the constraint graph and the memory model models the object, the pointer analysis uses the solver to compute the points-to set of the pointer. The detailed description of the algorithm can be found via http://compilers.cs.ucla.edu/fernando/publications/papers/CGO09.pdf.
 
 
 ### Field-Sensitivity
-Since the implementation of Field Sensitivity is complex, We provide some additional information in the documentation.
+Since the implementation of Field Sensitivity is complex, we provide some additional information in the documentation.
 
-Field-sensitive pointer analysis is achieved by handling the offset constraints in the above table, at a high level, 
+Field-sensitive pointer analysis is achieved by handling the offset constraints in the above table, at a high level; 
 the constraint `v <- &s.field` is satisfied by first index the object `s.field` and then add the address of `s.field` to the `pts(v)`.
 `SolverBase.h: processOffset` implements the functionality.
 
@@ -87,7 +87,7 @@ const PtsTy &curPts = PT::getPointsTo(src->getNodeID());
 PtsTy newGEPs;
 newGEPs.intersectWithComplement(curPts, handled); // set intersect with complement
 ```
-After the diffed points-to set is computed,  it iterate over the set using the following loop.
+After the diffed points-to set is computed,  it iterates over the set using the following loop.
 
 ```cpp
  for (auto objNode : nodeVec) {
@@ -193,7 +193,7 @@ and others are reserved in our code base.
 
 ### Reserved Heuristics 
 
-- `HASH_EDGE_LIMIT`: Define the size of [`requiredEdges`](https://github.com/coderrect-inc/OpenRace/blob/6bd1e181e02cff77e27c43dc92f6fc6748fe25fe/src/PointerAnalysis/Solver/PartialUpdateSolver.h#L163) 
+- `HASH_EDGE_LIMIT`: Defines the size of [`requiredEdges`](https://github.com/coderrect-inc/OpenRace/blob/6bd1e181e02cff77e27c43dc92f6fc6748fe25fe/src/PointerAnalysis/Solver/PartialUpdateSolver.h#L163) 
   (of type `llvm::BitVector`) which indexes the newly added copy edges by using the hash values of the two nodes involved in a copy edge.
   The maximum value of the hash value is 4,294,967,295 (as indicated by `size_t`, a.k.a., `unsigned long int`).
   As shown [here](https://github.com/coderrect-inc/OpenRace/blob/6bd1e181e02cff77e27c43dc92f6fc6748fe25fe/src/PointerAnalysis/Solver/PartialUpdateSolver.h#L168),
@@ -205,13 +205,13 @@ and others are reserved in our code base.
 - The array heap allocation types might be inferred using heuristics
   - The [assumption](https://github.com/coderrect-inc/OpenRace/blob/9e5a85296a4d3ef65bdeb4ce8ddb48d4e874d156/src/PointerAnalysis/Util/Util.cpp#L454) here is:
    
-    *if the last element of the allocated structure is a zero-sized array, it is a structure type with flexible array element.*
+    *if the last element of the allocated structure is a zero-sized array, it is a structure type with flexible array elements.*
   - Mainly used in functions [`isStructWithFlexibleArray()`](https://github.com/coderrect-inc/OpenRace/blob/9e5a85296a4d3ef65bdeb4ce8ddb48d4e874d156/src/PointerAnalysis/Util/Util.cpp#L442) 
       and [`allocStructArrayObjImpl()`](https://github.com/coderrect-inc/OpenRace/blob/80ea16167e5eae99f712ee191c5cea1f52280f45/src/PointerAnalysis/Models/MemoryModel/FieldSensitive/FSMemModel.h#L102-L110)
 
 
 ### Removed Heuristics
 
-- `PTS_SIZE_LIMIT`: Set the upperbound of the size of a points-to set
+- `PTS_SIZE_LIMIT`: Set the upper bound of the size of a points-to set
     - Default value: 999
     - Removed since commit [0113a0adda3bf00f50c72470f95ee6c4a8feb2cb](https://github.com/coderrect-inc/OpenRace/commit/0113a0adda3bf00f50c72470f95ee6c4a8feb2cb)
