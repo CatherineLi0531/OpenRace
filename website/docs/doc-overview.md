@@ -25,7 +25,7 @@ The intermediate steps to produce the race report are:
 
 ### Program Trace
 
-First a `ProgramTrace` is constructed from the input IR. This trace represents a simulated execution of the program.
+First, a `ProgramTrace` is constructed from the input IR. This trace represents a simulated execution of the program.
 
 During the construction of the program trace, a number of things happen.
  - [PreProcessing](#preprocessing) transformations are run to make analyses easier
@@ -36,12 +36,12 @@ See the [Trace](#trace) section for more detail on how the `ProgramTrace` is bui
 
 ### Analysis
 
-Next a number of analyses are run. Each takes the program trace as input and can then be queried for some property in the program trace.
+Next, a number of analyses are run. Each takes the program trace as input and can then be queried for some property in the program trace.
 
 The core analyses are:
 - **SharedMemory** analysis finds events that could potentially access the same location in memory.
 - **HappensBefore** analysis determines if two events could potentially happen in parallel.
-- **LockSet** tracks what locks are held by an event during execution, and can be used to find if two events share a common lock.
+- **LockSet** tracks what locks are held by an event during execution, and can be used to find out if two events share a common lock.
 
 See the [Analysis](#analysis) section for more details.
 
@@ -147,7 +147,7 @@ So the code in the IR directory focuses on extracting only the LLVM instructions
 
 The logical operation interfaces are wrappers around LLVM Instructions, and return values in terms of LLVM IR. Logical operations will later be converted to program events, which answer questions in terms of static program execution.
 
-As an example, in the context of race detection the only information we really need to know about a read operation, is what value is being read.
+As an example, in the context of race detection, the only information we really need to know about a read operation, is what value is being read.
 
 So, the interface for a logical read operation looks something like the following.
 
@@ -223,7 +223,7 @@ bool isPthreadJoin(llvm::StringRef name);
 
 These recognizers are used to determine if the function being called is a certain API call (e..g. pthread create or join). The majority of the code in LanguageModel are recognizers like this for various libraries or frameworks.
 
-The only exceptions are the `RaceModel.*` files.
+The only exceptions are `RaceModel.*` files.
 
 #### RaceModel
 
@@ -302,7 +302,7 @@ Trace contains the logic for simulating execution and creating a static program 
 
 The important code in this directory are `Event`, `ThreadTrace`, and `ProgramTrace`.
 
-The `Event` contains a list of interfaces, similar to the `IR.h` file (see the [IR](#ir) section). Each Event interface wraps an IR type. Where IR interfaces return values in the context of LLVM IR, events return values in the context of the simulated execution.
+The `Event` contains a list of interfaces, similar to the `IR.h` file (see the [IR](#ir) section). Each `Event` interface wraps an IR type. Where IR interfaces return values in the context of LLVM IR, events return values in the context of the simulated execution.
 
 As an example, look at the following interface for a read at IR and Event levels.
 
@@ -323,6 +323,6 @@ The ReadIR interface returns the `llvm::Value` being accessed, but the Event int
 
 This is the key difference between IR and Events. IR interfaces are just wrappers around LLVM IR instructions, but Events represent actual program events and their simulated execution.
 
-Lastly, to construct a list of simulated events (e.g. a trace), a function in `ThreadTrace` takes an entry function as input, traverses the Race IR and builds the simulated trace for a given thread.
+Lastly, to construct a list of simulated events (e.g., a trace), a function in `ThreadTrace` takes an entry function as input, traverses the Race IR, and builds the simulated trace for a given thread.
 
 The `ProgramTrace` class is just a collection of thread traces representing all threads that ran during simulated program execution.
